@@ -163,7 +163,3 @@ cython_debug/
 .Trashes
 ehthumbs.db
 Thumbs.db
-
-# Banner Images
-banner_white.png
-e.png
