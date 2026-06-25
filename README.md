@@ -4,7 +4,9 @@
 
 ResearchMind is an elegant, cooperative multi-agent research pipeline that automates the collection, extraction, synthesis, and critical evaluation of information on any given topic. By orchestrating specialized AI agents and LLM chains, ResearchMind creates comprehensive, factual, and structured research reports in markdown format.
 
-It includes three ways to interact with the system: a **FastAPI Backend Server**, a **Streamlit Web Application** with real-time pipeline visualization, and a **Command Line Interface (CLI)** script.
+It includes two ways to interact with the system:
+1. 🌐 **FastAPI Web Server & SPA**: Serves a premium, modern single-page application (SPA) featuring a dark theme, a repeating dot grid background, a cursor-following spotlight glow, and real-time step visualization powered by a live NDJSON event stream.
+2. 💻 **Command Line Interface (CLI)**: A console script for running the pipeline synchronously.
 
 ---
 
@@ -35,12 +37,13 @@ graph TD
 
 The project leverages modern AI engineering and web frameworks:
 
-*   **Core LLM Framework**: [LangChain](https://github.com/langchain-ai/langchain) (`langchain`, `langchain-core`, `langchain-community`, `langchain-mistralai`)
-*   **Agent Construction**: LangChain's new `create_agent` graph compilation standard.
+*   **Core LLM Framework**: [LangChain](https://github.com/langchain-ai/langchain) (`langchain`, `langchain-core`, `langchain-community`, `langchain-mistralai`) using the `mistral-large-latest` model.
+*   **Agent Construction**: LangChain's standard ReAct graph agent standard.
 *   **Web Search API**: [Tavily Search](https://tavily.com/) (`tavily-python`) for developer-optimized search results.
-*   **Web Scraping & Parsing**: `BeautifulSoup4`, `lxml`, and `requests` for fetching and cleaning raw HTML.
-*   **Frontend UI**: [Streamlit](https://streamlit.io/) with a fully customized theme (dark palette, HSL radial gradients, responsive grids, CSS micro-animations, and interactive pipeline steps).
-*   **Utility & Styling**: `rich` (CLI terminal formatting), `python-dotenv` (environment variables), and `pydantic` (data validation).
+*   **Web Scraping & Parsing**: `BeautifulSoup4` and `requests` for fetching and cleaning raw HTML.
+*   **Frontend UI**: Single Page Application built with vanilla HTML5, CSS3 (custom CSS variables, repeating dot grid background, cursor spotlight glow, animations), and JavaScript (NDJSON streaming client and marked.js for Markdown rendering).
+*   **Backend Server**: FastAPI & Uvicorn (hosts API endpoints and streams NDJSON events).
+*   **Utility**: `rich` (CLI terminal formatting), `python-dotenv` (environment variables), and `pydantic` (data validation).
 
 ---
 
@@ -48,8 +51,8 @@ The project leverages modern AI engineering and web frameworks:
 
 ### 1. Clone & Navigate
 ```bash
-git clone <your-repo-url>
-cd MultiAgentSystem
+git clone https://github.com/Sayan-Official-32/ResearchMind.git
+cd ResearchMind
 ```
 
 ### 2. Set Up a Virtual Environment
@@ -88,14 +91,19 @@ You can run ResearchMind in two ways:
 ### A. FastAPI Server (Web Application & API)
 Launch the server to host both the elegant visual Web Application and the API endpoints:
 ```bash
+python app.py
+```
+*or*
+```bash
 uvicorn app:app --reload --port 8000
 ```
 *   **Web App**: Open your browser and navigate to `http://localhost:8000/` to use the interactive single-page application with real-time pipeline visualization.
 *   **API Docs**: Interactive Swagger documentation is available at `http://localhost:8000/docs`.
 
-#### Non-Streaming API Request Example:
+#### Streaming API Request:
+The client requests NDJSON events by making a POST request:
 ```bash
-curl -X POST http://localhost:8000/research \
+curl -X POST http://localhost:8000/research/stream \
   -H "Content-Type: application/json" \
   -d '{"topic": "Quantum computing breakthroughs 2025"}'
 ```
@@ -120,9 +128,10 @@ python pipeline.py
 ├── pipeline.py            # Sequential orchestration logic (CLI entrypoint & generator)
 ├── app.py                 # FastAPI server (serves API & SPA frontend)
 ├── static/                # Single Page Application assets
-│   ├── css/style.css      # Premium UI stylesheet
+│   ├── css/style.css      # Premium UI stylesheet with cursor spotlight glow
 │   ├── js/app.js          # Live NDJSON streaming & state controller
 │   └── index.html         # HTML layout
+├── DOCUMENTATION.md       # Developer documentation (code walkthroughs)
 ├── project_concept.md     # Project idea & design philosophy
 └── README.md              # Project documentation (this file)
 ```
@@ -130,6 +139,6 @@ python pipeline.py
 ---
 
 ## 👥 Contributors & Credits
-*   **LangChain** for multi-agent graph capabilities.
+*   **LangChain** for multi-agent capabilities.
 *   **Tavily API** for search services.
 *   **FastAPI** for hosting the backend endpoints and serving the Single Page Web Application.
