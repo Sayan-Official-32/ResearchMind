@@ -1,6 +1,7 @@
 import time
+from typing import Generator
 from agents import build_reader_agent, build_search_agent, writer_chain, critic_chain
-from rich import print 
+from rich import print   # type: ignore[missing-import]
 
 def run_research_pipeline(topic: str) -> dict:
     state = {}
@@ -87,7 +88,7 @@ def run_research_pipeline(topic: str) -> dict:
     return state
 
 
-def run_research_pipeline_stream(topic: str):
+def run_research_pipeline_stream(topic: str) -> Generator[dict, None, None]:
     state = {}
 
     # Step 1 — Search Agent

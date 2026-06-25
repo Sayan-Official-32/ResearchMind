@@ -1,9 +1,10 @@
-from langchain.agents import create_agent
-from langchain_mistralai import ChatMistralAI
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
+from langchain.agents import create_agent  # type: ignore[missing-import]
+from langchain_mistralai import ChatMistralAI  # type: ignore[missing-import]
+from langchain_core.prompts import ChatPromptTemplate  # type: ignore[missing-import]
+from langchain_core.output_parsers import StrOutputParser  # type: ignore[missing-import]
+from langgraph.graph.state import CompiledStateGraph  # type: ignore[missing-import]
 from tools import web_search , scrape_url 
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # type: ignore[missing-import]
 
 load_dotenv()
 
@@ -12,7 +13,7 @@ llm = ChatMistralAI(model="mistral-large-latest", temperature=0)
 
 
 #1st agent 
-def build_search_agent():
+def build_search_agent() -> CompiledStateGraph:
     return create_agent(
         model = llm,
         tools= [web_search]
@@ -20,7 +21,7 @@ def build_search_agent():
 
 #2nd agent 
 
-def build_reader_agent():
+def build_reader_agent() -> CompiledStateGraph:
     return create_agent(
         model = llm,
         tools = [scrape_url]

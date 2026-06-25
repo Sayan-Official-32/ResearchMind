@@ -1,216 +1,238 @@
-# ResearchMind 🔬 · Developer Documentation
+# ResearchMind 🔬 · In-Depth Developer Documentation & Architecture Guide
 
-This document provides a comprehensive overview of the **ResearchMind** architecture, detailed file-by-file explanations, library usages, and logic design choices, along with inline code explanations.
-
----
-
-## 🏗️ System Architecture Overview
-
-ResearchMind uses a sequential multi-agent orchestration architecture. Instead of running a single long LLM prompt, the system breaks the research process down into discrete steps handled by specialized agents and structured chains:
-
-1. **Information Retrieval** (Search Agent)
-2. **Deep Content Extraction** (Reader Agent)
-3. **Synthesis & Draft Compilation** (Writer Chain)
-4. **Factual & Quality Inspection** (Critic Chain)
-
-This separation of concerns increases accuracy, reduces hallucinations, and allows for real-time tracking of intermediate steps.
+This document provides an exhaustive, production-grade guide to the **ResearchMind** codebase. It covers the core multi-agent orchestration architecture, step-by-step code walkthroughs, design decisions, data structures, and the integration between backend Python pipelines and frontend visual interfaces.
 
 ---
 
-## 📂 File-by-File Breakdown & Code Explanations
+## 🎨 Graphical Abstract
+
+Below is the visual concept and execution flow of the ResearchMind Multi-Agent system:
+
+![ResearchMind Graphical Abstract](C:/Users/ASUS/OneDrive/Documents/VSCODE/MultiAgentSystem/static/graphical_abstract.png)
+
+### 🔄 Multi-Agent Orchestration & Data Flow Diagram
+
+```mermaid
+graph TD
+    %% Define styles for distinct modules
+    classDef client fill:#1e1e2f,stroke:#7b2cbf,stroke-width:2px,color:#fff;
+    classDef api fill:#1c2d37,stroke:#00b4d8,stroke-width:2px,color:#fff;
+    classDef pipeline fill:#102e1c,stroke:#2a9d8f,stroke-width:2px,color:#fff;
+    classDef agent fill:#3d2010,stroke:#e76f51,stroke-width:2px,color:#fff;
+    classDef tool fill:#2d1a2d,stroke:#ff5a1a,stroke-width:2px,color:#fff;
+
+    %% Elements
+    User([User Prompt / Topic])
+    SPA["SPA Web Interface (index.html / app.js)"]:::client
+    FastAPI["FastAPI App (app.py)"]:::api
+    Runner["run_research_pipeline_stream (pipeline.py)"]:::pipeline
+    
+    subgraph OrchestratedAgents ["agents.py (Agent Graphs)"]
+        SearchAgent["Search Agent (ReAct)"]:::agent
+        ReaderAgent["Reader Agent (ReAct)"]:::agent
+        WriterChain["Writer Chain (LCEL)"]:::agent
+        CriticChain["Critic Chain (LCEL)"]:::agent
+    end
+
+    subgraph ExternalTools ["tools.py (Custom Tools)"]
+        WebSearchTool["web_search (Tavily API)"]:::tool
+        ScrapeUrlTool["scrape_url (BeautifulSoup4)"]:::tool
+    end
+
+    %% Flow
+    User -->|Topic Input| SPA
+    SPA -->|1. POST /research/stream| FastAPI
+    FastAPI -->|2. Invokes stream generator| Runner
+    
+    %% Sequential pipeline steps
+    Runner -->|3. Event: search_start| SearchAgent
+    SearchAgent -->|Invokes| WebSearchTool
+    WebSearchTool -->|Returns snippets & URLs| SearchAgent
+    SearchAgent -->|Event: search_done| Runner
+    
+    Runner -->|4. Event: reader_start| ReaderAgent
+    ReaderAgent -->|Invokes| ScrapeUrlTool
+    ScrapeUrlTool -->|Returns parsed content| ReaderAgent
+    ReaderAgent -->|Event: reader_done| Runner
+    
+    Runner -->|5. Event: writer_start| WriterChain
+    WriterChain -->|Synthesizes Search + Scrape| WriterChain
+    WriterChain -->|Event: writer_done (Markdown)| Runner
+    
+    Runner -->|6. Event: critic_start| CriticChain
+    CriticChain -->|Evaluates report (Score & comments)| CriticChain
+    CriticChain -->|Event: critic_done| Runner
+
+    Runner -->|7. NDJSON Stream chunk-by-chunk| FastAPI
+    FastAPI -->|8. Real-time updates| SPA
+```
+
+---
+
+## 🏗️ System Architecture & Design Philosophy
+
+When asking generic LLMs to construct research reports, they suffer from knowledge cutoffs, single-turn hallucination, and lack of formatting structure. **ResearchMind** solves this by decomposing the process into a **cooperative multi-agent assembly line**.
+
+The system utilizes LangChain and LangGraph to define autonomous agents and chains:
+*   **Search Agent**: Queries the web to discover active resources.
+*   **Reader Agent**: Accesses specific websites, strips non-text bloat (CSS, JS, footers), and reads page bodies.
+*   **Writer Chain**: Compiles the gathered data into a structured report using LangChain Expression Language (LCEL).
+*   **Critic Chain**: Proofreads the output, evaluates the quality, and provides scores and actionable feedback.
+
+---
+
+## 📂 File-by-File Complete Guide & Walkthrough
+
+Here is the exact description of how each file operates, how libraries are used, and how variables flow between modules:
 
 ### 1. [tools.py](file:///c:/Users/ASUS/OneDrive/Documents/VSCODE/MultiAgentSystem/tools.py)
-* **Purpose**: Defines the custom actions (tools) that the LangChain agents can execute to interact with the external world.
-* **Libraries Used**:
-  * `langchain.tools.tool`: A decorator that converts standard Python functions into structured LangChain `Tool` objects. It automatically parses the function's docstring and type hints to generate descriptions the LLM uses to understand when and how to call the tool.
-  * `tavily.TavilyClient`: The official client library for the Tavily Search API. Tavily is optimized specifically for LLM search tasks, returning raw search data pre-ranked and filtered for factual relevance.
-  * `requests`: A clean HTTP library used to fetch raw HTML pages from selected URLs.
-  * `bs4.BeautifulSoup`: A parser library used to scrape and clean HTML pages by removing useless nodes (scripts, styles, navigation bars, and footers), leaving only readable content.
+*   **Role**: Exposes functions decorated with `@tool` to allow agents to interact with search engines and retrieve webpage documents.
+*   **Core Logic**:
+    *   **Tavily API Integration**: `TavilyClient` (line 10) queries Tavily's dedicated LLM-friendly index. It returns JSON objects containing page titles, URLs, and relevant content snippets.
+    *   **HTML Scraping**: Uses `requests` to fetch raw HTML pages with a user-agent header to prevent bot-detection blocks. `BeautifulSoup4` extracts core text, parses the structure, decomposes junk tags (`<script>`, `<style>`, `<nav>`, `<footer >`), and truncates the resulting plain text to `3000` characters to prevent LLM context overflows.
 
-#### 💻 Code Explanation: `web_search`
 ```python
-tavily = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
-
+# tools.py snippet
 @tool
 def web_search(query : str) -> str:
     """Search the web for recent and reliable information on a topic . Returns Titles , URLs and snippets."""
-    # Queries Tavily API for the top 5 most relevant pages
     results = tavily.search(query=query, max_results=5)
-
     out = []
-    # Loop through search results to format titles, URLs, and snippets
     for r in results['results']:
-        out.append(
-            f"Title: {r['title']}\nURL: {r['url']}\nSnippet: {r['content'][:300]}\n"
-        )
-    
+        out.append(f"Title: {r['title']}\nURL: {r['url']}\nSnippet: {r['content'][:300]}\n")
     return "\n----\n".join(out)
 ```
-* **Why it is structured this way**:
-  * The `@tool` decorator allows the agent to recognize `web_search` as an available action.
-  * The function docstring acts as the tool description, instructing the agent on *when* it should be triggered.
-  * Slicing `r['content'][:300]` extracts just enough detail to present to the LLM without consuming too many tokens.
-
-#### 💻 Code Explanation: `scrape_url`
-```python
-@tool
-def scrape_url(url: str) -> str:
-    """Scrape and return clean text content from a given URL for deeper reading."""
-    try:
-        # Fetch the HTML document with a mock User-Agent to avoid scraping blocks
-        resp = requests.get(url, timeout=8, headers={"User-Agent": "Mozilla/5.0"})
-        soup = BeautifulSoup(resp.text, "html.parser")
-        
-        # Deconstruct non-article elements to remove boilerplate clutter
-        for tag in soup(["script", "style", "nav", "footer"]):
-            tag.decompose()
-            
-        # Extract clean text and return the first 3000 characters
-        return soup.get_text(separator=" ", strip=True)[:3000]
-    except Exception as e:
-        return f"Could not scrape URL: {str(e)}"
-```
-* **Why it is structured this way**:
-  * Websites often block empty requests. Passing a `"User-Agent"` header makes the scraper look like a standard web browser.
-  * `tag.decompose()` drops visual or executable tags like scripts and styles.
-  * Slicing to `[:3000]` ensures the reader agent receives high-density text while keeping the size small enough for context limit guidelines.
 
 ---
 
 ### 2. [agents.py](file:///c:/Users/ASUS/OneDrive/Documents/VSCODE/MultiAgentSystem/agents.py)
-* **Purpose**: Configures the LLM models, custom prompts, agents, and sequential processing chains.
-* **Libraries Used**:
-  * `langchain.agents.create_agent`: Instantiates autonomous agents that can choose to invoke tools iteratively.
-  * `langchain_mistralai.ChatMistralAI`: Interface to invoke Mistral AI language models.
-  * `langchain_core.prompts.ChatPromptTemplate`: Structures the instructions sent to the LLM. It separates System-level instructions (rules, behaviors) from Human-level inputs (data placeholders).
-  * `langchain_core.output_parsers.StrOutputParser`: Extracts raw text content from LLM response payloads, preventing the need to write boilerplate extraction code.
-
-#### 💻 Code Explanation: Agent Instantiation
-```python
-llm = ChatMistralAI(model="mistral-large-latest", temperature=0)
-
-def build_search_agent():
-    return create_agent(
-        model = llm,
-        tools= [web_search]
-    )
-```
-* **Why it is structured this way**:
-  * `temperature=0` guarantees consistent output formatting and logical reasoning.
-  * `create_agent` creates a ReAct (Reasoning and Acting) loop agent, giving the model capability to construct search queries, run them via `web_search`, and evaluate results.
-
-#### 💻 Code Explanation: LangChain LCEL Chains
-```python
-writer_prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are an expert research writer. Write clear, structured and insightful reports."),
-    ("human", """Write a detailed research report on the topic below...""")
-])
-
-writer_chain = writer_prompt | llm | StrOutputParser()
-```
-* **Why it is structured this way**:
-  * The `|` operator compiles prompt, LLM, and parser using the LangChain Expression Language (LCEL).
-  * It passes variables into `writer_prompt`, pipes the prompt to `llm`, and then formats the output into a clean Python string through `StrOutputParser()`.
+*   **Role**: Initializes the LLM engine (`ChatMistralAI` with `temperature=0` for deterministic outputs), imports tools, and builds the agents and chains.
+*   **Core Code Changes**: Added explicit return annotations (`-> CompiledStateGraph`) to satisfy type checking environments.
+*   **Function Details**:
+    *   **[build_search_agent](file:///c:/Users/ASUS/OneDrive/Documents/VSCODE/MultiAgentSystem/agents.py#L15)**: Binds the `web_search` tool to the LLM agent graph.
+    *   **[build_reader_agent](file:///c:/Users/ASUS/OneDrive/Documents/VSCODE/MultiAgentSystem/agents.py#L23)**: Binds the `scrape_url` tool to the LLM agent graph.
+    *   **`writer_chain`**: A LangChain Expression Language (LCEL) sequence. Combines System/Human instructions, feeds it to Mistral, and parses the output as plain text.
+    *   **`critic_chain`**: Evaluates the written report, scores it out of 10, and structures strengths and areas of improvement.
 
 ---
 
 ### 3. [pipeline.py](file:///c:/Users/ASUS/OneDrive/Documents/VSCODE/MultiAgentSystem/pipeline.py)
-* **Purpose**: Orchestrates all agents/chains sequentially and exposes synchronous (CLI) and generator (Web API) pipeline runners.
-* **Key Functions**:
-  * `run_research_pipeline(topic: str) -> dict`: A synchronous function that runs all steps end-to-end, prints results in the terminal, and returns a state dictionary. Used as the CLI entry point.
-
-#### 💻 Code Explanation: `run_research_pipeline_stream`
-```python
-def run_research_pipeline_stream(topic: str):
-    state = {}
-
-    # Step 1 — Search Agent
-    yield {"event": "search_start"}
-    try:
-        search_agent = build_search_agent()
-        search_result = search_agent.invoke({
-            "messages": [("user", f"Find recent, reliable and detailed information about: {topic}")]
-        })
-        state["search_results"] = search_result['messages'][-1].content
-        yield {"event": "search_done", "data": state["search_results"]}
-    except Exception as e:
-        state["search_results"] = f"Search failed: {str(e)}"
-        yield {"event": "search_failed", "data": state["search_results"]}
-        
-    # Subsequent steps follow this pattern...
-```
-* **Why it is structured this way**:
-  * It acts as a python Generator, utilizing the `yield` statement to emit dictionaries at specific stages.
-  * A traditional REST endpoint blocks the client until the entire process is completed (which takes 15–20 seconds). Using a generator permits the FastAPI server to push updates step-by-step.
+*   **Role**: Orchestrates the agents and chains sequentially. It exposes two key runners:
+    *   `run_research_pipeline`: Synchronous version used in command-line environments.
+    *   `run_research_pipeline_stream`: An asynchronous-friendly Python generator (`yield`) that posts progress updates (`search_start`, `search_done`, etc.) step-by-step.
+*   **State Machine**:
+    *   The state dictionary is built progressively:
+        $$\text{State} = \{ \text{"search\_results"}, \text{"scraped\_content"}, \text{"report"}, \text{"feedback"} \}$$
+    *   Delays (`time.sleep(2)`) are strategically injected between steps to prevent hitting Mistral and Tavily rate limits.
 
 ---
 
 ### 4. [app.py](file:///c:/Users/ASUS/OneDrive/Documents/VSCODE/MultiAgentSystem/app.py)
-* **Purpose**: Serves static SPA assets and exposes API stream route.
-* **Libraries Used**:
-  * `fastapi.responses.FileResponse`: Used to serve the SPA `index.html` at the root path (`/`).
-  * `fastapi.responses.StreamingResponse`: Serves chunked data over HTTP.
-  * `fastapi.staticfiles.StaticFiles`: Mounts directories to serve CSS/JS stylesheets directly.
+*   **Role**: Serves as the web backend using FastAPI.
+*   **Connections**:
+    *   Binds the static folder `static` containing the SPA frontend (HTML/CSS/JS) to the `/static` route.
+    *   Binds the root endpoint `/` to return `static/index.html`.
+    *   Exposes a `/research/stream` streaming route. It imports the python generator from `pipeline.py`, wraps it inside an event generator, serializes output dictionaries into NDJSON (Newline Delimited JSON) strings separated by `\n`, and yields them inside FastAPI's `StreamingResponse`.
 
-#### 💻 Code Explanation: Serving the Stream
 ```python
+# app.py snippet
 @app.post("/research/stream")
-def research_stream(request: ResearchRequest):
+def research_stream(request: ResearchRequest) -> StreamingResponse:
     from pipeline import run_research_pipeline_stream
-
-    def event_generator():
-        # Iterate over the python generator
+    def event_generator() -> None:
         for event in run_research_pipeline_stream(request.topic):
-            # Serialize each event dictionary to a string + a newline character (\n)
             yield json.dumps(event) + "\n"
-
-    # Return a StreamingResponse with media type application/x-ndjson (NDJSON)
     return StreamingResponse(event_generator(), media_type="application/x-ndjson")
 ```
-* **Why it is structured this way**:
-  * NDJSON (Newline Delimited JSON) is a standard format for streaming structured records over a single HTTP connection.
-  * `StreamingResponse` maps HTTP chunked transfer-encoding to the frontend client, feeding stream reader events progressively as they run.
 
 ---
 
 ### 5. [static/js/app.js](file:///c:/Users/ASUS/OneDrive/Documents/VSCODE/MultiAgentSystem/static/js/app.js)
-* **Purpose**: Manages frontend interactive actions, triggers API requests, and processes event data streams.
+*   **Role**: Executes UI updates, handles inputs/event-chips, and parses the NDJSON HTTP payload stream.
+*   **Connection and Stream Handling**:
+    *   Utilizes the browser `fetch()` API and retrieves a reader (`response.body.getReader()`).
+    *   Loops to decode network bytes into string fragments via `TextDecoder` and accumulates them in a buffer.
+    *   Splits the buffer by the newline character `\n` to process each line. It pops off the last element (`lines.pop()`) which might be partially downloaded, parsing only complete JSON statements to prevent client app crashes.
+    *   Uses `marked.js` to render Markdown syntax into HTML dynamically.
 
-#### 💻 Code Explanation: Stream Processing
-```javascript
-// Send POST request to request the research stream
-const response = await fetch('/research/stream', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ topic })
-});
+---
 
-const reader = response.body.getReader();
-const decoder = new TextDecoder();
-let buffer = '';
+### 6. [static/css/style.css](file:///c:/Users/ASUS/OneDrive/Documents/VSCODE/MultiAgentSystem/static/css/style.css)
+*   **Role**: Provides a modern, dark-themed, glassmorphic UI design matching premium design aesthetics.
+*   **Key Design Elements**:
+    *   **Repeating Dot Grid Background**: Built using a radial-gradient background pattern (`background-image: radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1px)`).
+    *   **Spotlight Glow**: Tracks the cursor position by listening to mouse movements in JavaScript and writing values to CSS custom properties (`--mouse-x` and `--mouse-y`), which update a radial glow background mask.
+    *   **Pulsing State Indicators**: Animates waiting/running cards dynamically to enhance real-time responsiveness.
 
-while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
+---
 
-    // Decode current chunk and append to buffer
-    buffer += decoder.decode(value, { stream: true });
-    
-    // Split the buffer by newline character
-    const lines = buffer.split('\n');
-    
-    // Hold onto the last element as it might be incomplete
-    buffer = lines.pop(); 
+## 🔌 API Contract Reference
 
-    // Loop through complete JSON lines
-    for (const line of lines) {
-        if (line.trim()) {
-            const payload = JSON.parse(line);
-            handleStreamEvent(payload); // Updates UI elements based on event
-        }
+### Post Research Stream
+*   **URL**: `/research/stream`
+*   **Method**: `POST`
+*   **Content-Type**: `application/json`
+*   **Request Body**:
+    ```json
+    {
+      "topic": "String representing the research topic"
     }
-}
+    ```
+*   **Response**: `application/x-ndjson` (Newline-Delimited JSON)
+*   **Event Payloads**:
+    *   `{"event": "search_start"}`
+    *   `{"event": "search_done", "data": "Raw snippets and links..."}`
+    *   `{"event": "reader_start"}`
+    *   `{"event": "reader_done", "data": "Scraped webpage contents..."}`
+    *   `{"event": "writer_start"}`
+    *   `{"event": "writer_done", "data": "# Markdown Report Title..."}`
+    *   `{"event": "critic_start"}`
+    *   `{"event": "critic_done", "data": "Score: 8/10\nStrengths..."}`
+    *   `{"event": "complete", "state": { ... }}`
+
+---
+
+## ⚙️ Execution Flow Chart (How variables pass)
+
 ```
-* **Why it is structured this way**:
-  * Using `fetch` streaming enables processing data as it arrives instead of buffering everything.
-  * Streams can split JSON records across network packets. Appending to `buffer` and holding the last element `lines.pop()` ensures we only parse complete JSON strings, preventing parsing crashes.
+[UI Input Box] (topic) 
+      │ 
+      ├─► (topic) ──► FastAPI POST [/research/stream]
+      │                                │
+      │                                ▼
+      ├─► (topic) ──► pipeline.py [run_research_pipeline_stream]
+      │                                │
+      │   ┌────────────────────────────┴──────────────────────────┐
+      │   ▼                                                       ▼
+  Search Agent (web_search)                               Reader Agent (scrape_url)
+      │                                                       │
+      ▼                                                       ▼
+  [search_results] ──────────────────────────────────────► [scraped_content]
+      │                                                       │
+      └────────────────────────┬──────────────────────────────┘
+                               │ (Combined Research Text)
+                               ▼
+                         Writer Chain ──► [report] (Markdown)
+                               │
+                               ▼
+                         Critic Chain ──► [feedback] (Score & Comments)
+                               │
+                               ▼
+                         [complete] (Event sent back to SPA)
+```
+
+---
+
+## 🚀 Setup & Launching the Project
+
+1. **Requirements**: Make sure you have Python 3.10+ installed.
+2. **Environment Configuration**: Set up your keys in a root `.env` file:
+   ```env
+   TAVILY_API_KEY="tvly-xxxxxxxxxxxxxxx"
+   MISTRAL_API_KEY="xxxxxxxxxxxxxxxxxxx"
+   ```
+3. **Launch Server**:
+   ```bash
+   python app.py
+   ```
+4. **Access UI**: Open `http://localhost:8000/` in your browser.

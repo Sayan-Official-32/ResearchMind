@@ -4,9 +4,16 @@
 
 ResearchMind is an elegant, cooperative multi-agent research pipeline that automates the collection, extraction, synthesis, and critical evaluation of information on any given topic. By orchestrating specialized AI agents and LLM chains, ResearchMind creates comprehensive, factual, and structured research reports in markdown format.
 
-It includes two ways to interact with the system:
-1. 🌐 **FastAPI Web Server & SPA**: Serves a premium, modern single-page application (SPA) featuring a dark theme, a repeating dot grid background, a cursor-following spotlight glow, and real-time step visualization powered by a live NDJSON event stream.
-2. 💻 **Command Line Interface (CLI)**: A console script for running the pipeline synchronously.
+> [!NOTE]
+> For a deep-dive file walkthrough, API definitions, and complete code-level explanations, please refer to the [DOCUMENTATION.md](file:///c:/Users/ASUS/OneDrive/Documents/VSCODE/MultiAgentSystem/DOCUMENTATION.md) file.
+
+---
+
+## 🎨 Graphical Abstract
+
+Below is the visual concept and execution flow of the ResearchMind Multi-Agent system:
+
+![ResearchMind Graphical Abstract](static/graphical_abstract.png)
 
 ---
 

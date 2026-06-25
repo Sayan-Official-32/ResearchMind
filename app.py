@@ -1,10 +1,10 @@
-from fastapi import FastAPI
-from fastapi.responses import FileResponse, StreamingResponse
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from fastapi import FastAPI  # type: ignore[missing-import]
+from fastapi.responses import FileResponse, StreamingResponse   # type: ignore[missing-import]
+from fastapi.staticfiles import StaticFiles  # type: ignore[missing-import]
+from pydantic import BaseModel  # type: ignore[missing-import]
 import json
 import os
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # type: ignore[missing-import]
 
 # Load environment variables
 load_dotenv()
@@ -20,7 +20,7 @@ class ResearchRequest(BaseModel):
 
 # Serve the Single Page Application index.html at the root route
 @app.get("/")
-def read_index():
+def read_index() -> FileResponse:
     index_path = os.path.join("static", "index.html")
     if os.path.exists(index_path):
         return FileResponse(index_path)
@@ -28,10 +28,10 @@ def read_index():
 
 # Endpoint to stream the research pipeline steps as NDJSON (Newline Delimited JSON)
 @app.post("/research/stream")
-def research_stream(request: ResearchRequest):
+def research_stream(request: ResearchRequest) -> StreamingResponse:
     from pipeline import run_research_pipeline_stream
 
-    def event_generator():
+    def event_generator() -> None:
         # Iterate over pipeline events and stream them as newline-delimited JSON strings
         for event in run_research_pipeline_stream(request.topic):
             yield json.dumps(event) + "\n"
@@ -42,5 +42,5 @@ def research_stream(request: ResearchRequest):
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 if __name__ == "__main__":
-    import uvicorn
+    import uvicorn  # type: ignore[missing-import]
     uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
