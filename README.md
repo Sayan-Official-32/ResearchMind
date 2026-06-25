@@ -4,7 +4,7 @@
 
 ResearchMind is an elegant, cooperative multi-agent research pipeline that automates the collection, extraction, synthesis, and critical evaluation of information on any given topic. By orchestrating specialized AI agents and LLM chains, ResearchMind creates comprehensive, factual, and structured research reports in markdown format.
 
-It includes both a **Streamlit Web Application** with real-time pipeline visualization and a **Command Line Interface (CLI)** script.
+It includes three ways to interact with the system: a **FastAPI Backend Server**, a **Streamlit Web Application** with real-time pipeline visualization, and a **Command Line Interface (CLI)** script.
 
 ---
 
@@ -35,7 +35,7 @@ graph TD
 
 The project leverages modern AI engineering and web frameworks:
 
-*   **Core LLM Framework**: [LangChain](https://github.com/langchain-ai/langchain) (`langchain`, `langchain-core`, `langchain-community`, `langchain-openai`)
+*   **Core LLM Framework**: [LangChain](https://github.com/langchain-ai/langchain) (`langchain`, `langchain-core`, `langchain-community`, `langchain-mistralai`)
 *   **Agent Construction**: LangChain's new `create_agent` graph compilation standard.
 *   **Web Search API**: [Tavily Search](https://tavily.com/) (`tavily-python`) for developer-optimized search results.
 *   **Web Scraping & Parsing**: `BeautifulSoup4`, `lxml`, and `requests` for fetching and cleaning raw HTML.
@@ -73,11 +73,11 @@ pip install -r requirements.txt
 Create a `.env` file in the root directory and add your API keys:
 ```env
 TAVILY_API_KEY="your-tavily-api-key"
-OPENAI_API_KEY="your-openai-api-key"
+MISTRAL_API_KEY="your-mistral-api-key"
 ```
 
 > [!IMPORTANT]  
-> The codebase instantiates `ChatOpenAI(model="gpt-4o-mini")` which requires an `OPENAI_API_KEY`. Please ensure `OPENAI_API_KEY` is present in your `.env` file. (If you want to use another provider like Mistral, update `agents.py` to instantiate `ChatMistralAI` instead).
+> The codebase instantiates `ChatMistralAI(model="mistral-large-latest")` which requires a `MISTRAL_API_KEY` in your `.env` file.
 
 ---
 
@@ -85,12 +85,20 @@ OPENAI_API_KEY="your-openai-api-key"
 
 You can run ResearchMind in two ways:
 
-### A. Streamlit Web App (Recommended)
-Launch the beautiful browser interface with real-time pipeline status:
+### A. FastAPI Server (Web Application & API)
+Launch the server to host both the elegant visual Web Application and the API endpoints:
 ```bash
-streamlit run app.py
+uvicorn app:app --reload --port 8000
 ```
-*Open your browser and navigate to `http://localhost:8501`.*
+*   **Web App**: Open your browser and navigate to `http://localhost:8000/` to use the interactive single-page application with real-time pipeline visualization.
+*   **API Docs**: Interactive Swagger documentation is available at `http://localhost:8000/docs`.
+
+#### Non-Streaming API Request Example:
+```bash
+curl -X POST http://localhost:8000/research \
+  -H "Content-Type: application/json" \
+  -d '{"topic": "Quantum computing breakthroughs 2025"}'
+```
 
 ### B. Command Line Interface (CLI)
 Run the script directly in your terminal:
@@ -109,8 +117,13 @@ python pipeline.py
 ├── requirements.txt       # Project dependencies
 ├── tools.py               # Custom tools (web_search, scrape_url)
 ├── agents.py              # Agent graphs & LLM chain configurations
-├── pipeline.py            # Sequential orchestration logic (CLI entrypoint)
-├── app.py                 # Streamlit frontend & web-orchestrator
+├── pipeline.py            # Sequential orchestration logic (CLI entrypoint & generator)
+├── app.py                 # FastAPI server (serves API & SPA frontend)
+├── static/                # Single Page Application assets
+│   ├── css/style.css      # Premium UI stylesheet
+│   ├── js/app.js          # Live NDJSON streaming & state controller
+│   └── index.html         # HTML layout
+├── project_concept.md     # Project idea & design philosophy
 └── README.md              # Project documentation (this file)
 ```
 
@@ -119,4 +132,4 @@ python pipeline.py
 ## 👥 Contributors & Credits
 *   **LangChain** for multi-agent graph capabilities.
 *   **Tavily API** for search services.
-*   **Streamlit** for the frontend engine.
+*   **FastAPI** for hosting the backend endpoints and serving the Single Page Web Application.
