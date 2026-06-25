@@ -1,6 +1,6 @@
 # ResearchMind 🔬 · Multi-Agent AI Research System
 
-![ResearchMind Banner](https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&h=400&q=80)
+![ResearchMind Banner](blob:https://gemini.google.com/752293bc-59ee-477c-a8c9-5d2daa378854)
 
 ResearchMind is an elegant, cooperative multi-agent research pipeline that automates the collection, extraction, synthesis, and critical evaluation of information on any given topic. By orchestrating specialized AI agents and LLM chains, ResearchMind creates comprehensive, factual, and structured research reports in markdown format.
 
