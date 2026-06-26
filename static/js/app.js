@@ -2,41 +2,36 @@ document.addEventListener('DOMContentLoaded', () => {
     const topicInput = document.getElementById('topicInput');
     const runBtn = document.getElementById('runBtn');
     const exampleChips = document.querySelectorAll('.example-chip');
-    const resultsSection = document.getElementById('resultsSection');
     
-    // Raw outputs
+    const chatContainer = document.getElementById('chatContainer');
+    const chatWelcome = document.getElementById('chatWelcome');
+    const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+    
+    // Raw outputs (workstation sidebar)
     const rawSearchContent = document.getElementById('rawSearchContent');
     const rawReaderContent = document.getElementById('rawReaderContent');
-    
-    // Final report
-    const reportContainer = document.getElementById('reportContainer');
-    const reportContent = document.getElementById('reportContent');
-    const downloadBtn = document.getElementById('downloadBtn');
-    
-    // Critic feedback
-    const feedbackPanel = document.getElementById('feedbackPanel');
-    const criticScore = document.getElementById('criticScore');
-    const feedbackContent = document.getElementById('feedbackContent');
     
     // Step DOM element map
     const steps = {
         search: {
             card: document.getElementById('step-search'),
-            status: document.getElementById('status-search')
+            status: document.getElementById('step-search')
         },
         reader: {
             card: document.getElementById('step-reader'),
-            status: document.getElementById('status-reader')
+            status: document.getElementById('step-reader')
         },
         writer: {
             card: document.getElementById('step-writer'),
-            status: document.getElementById('status-writer')
+            status: document.getElementById('step-writer')
         },
         critic: {
             card: document.getElementById('step-critic'),
-            status: document.getElementById('status-critic')
+            status: document.getElementById('step-critic')
         }
     };
+
+    let currentAiMsgBubbleId = null;
 
     // ── Auto-resize Input Textarea ──
     topicInput.addEventListener('input', autoResizeInput);
@@ -62,8 +57,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-
     runBtn.addEventListener('click', runPipeline);
+
+    // ── Clear History Handler ──
+    clearHistoryBtn.addEventListener('click', () => {
+        const messages = chatContainer.querySelectorAll('.chat-msg');
+        messages.forEach(m => m.remove());
+        chatWelcome.style.display = 'block';
+    });
 
     // ── Main Pipeline Execution ──
     async function runPipeline() {
@@ -73,9 +74,58 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // 1. Reset UI States
+        // 1. Prepare UI States for New Message
+        chatWelcome.style.display = 'none';
+        
+        // Append User Bubble
+        const userMsgHtml = `
+            <div class="chat-msg user">
+                <div class="msg-sender">USER</div>
+                <div class="msg-bubble">
+                    ${topic}
+                </div>
+            </div>
+        `;
+        chatContainer.insertAdjacentHTML('beforeend', userMsgHtml);
+        
+        // Append AI Placeholder Bubble
+        currentAiMsgBubbleId = `ai-msg-${Date.now()}`;
+        const aiMsgHtml = `
+            <div class="chat-msg ai" id="${currentAiMsgBubbleId}">
+                <div class="msg-sender">RESEARCHMIND</div>
+                <div class="msg-bubble">
+                    <div class="report-content-wrapper" style="display:none;">
+                        <div class="markdown-body report-text"></div>
+                        <a class="btn-download" href="#" download="research_report.md" style="margin-top:1rem; display:inline-flex;">
+                            <span>⬇ Download Report (.md)</span>
+                        </a>
+                    </div>
+                    <div class="feedback-content-wrapper" style="display:none; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1.2rem;">
+                        <div class="critic-score-box" style="font-size: 1.4rem; font-weight:700; color: var(--accent-green); margin-bottom: 0.8rem;">SCORE: --</div>
+                        <div class="markdown-body feedback-text"></div>
+                    </div>
+                    <div class="ai-loading" style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-secondary); font-size: 0.82rem; font-family: var(--font-sans);">
+                        <svg class="spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px; color: var(--accent-orange);">
+                            <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
+                            <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+                            <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
+                            <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+                        </svg>
+                        <span>Agent pipeline executing. Check the workstation on the left...</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        chatContainer.insertAdjacentHTML('beforeend', aiMsgHtml);
+        
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+        
+        // Reset topic Input
+        topicInput.value = '';
+        autoResizeInput();
+
         setRunningState(true);
-        resetUI();
+        resetWorkstationAndProgress();
 
         try {
             // 2. Fetch stream from FastAPI backend
@@ -129,8 +179,18 @@ document.addEventListener('DOMContentLoaded', () => {
             alert(`An error occurred while running the pipeline: ${error.message}`);
             // Reset active running steps to failed if error
             for (const key in steps) {
-                if (steps[key].status.textContent.includes('RUNNING')) {
-                    updateStepState(key, 'failed', 'FAILED');
+                if (steps[key].card.classList.contains('active')) {
+                    updateStepState(key, 'failed');
+                }
+            }
+            // Remove the loading indicator if we failed
+            if (currentAiMsgBubbleId) {
+                const aiBubble = document.getElementById(currentAiMsgBubbleId);
+                if (aiBubble) {
+                    const loadingEl = aiBubble.querySelector('.ai-loading');
+                    if (loadingEl) {
+                        loadingEl.innerHTML = `<span style="color:#ff5a1a;">⚠️ Pipeline execution failed: ${error.message}</span>`;
+                    }
                 }
             }
         } finally {
@@ -165,52 +225,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-
-    // ── Helper: Reset UI ──
-    function resetUI() {
-        resultsSection.classList.add('visible');
-        
-        // Reset steps
+    // ── Helper: Reset Workstation and Steps Progress ──
+    function resetWorkstationAndProgress() {
         Object.keys(steps).forEach(key => {
-            updateStepState(key, 'waiting', 'WAITING');
+            updateStepState(key, 'waiting');
         });
-
-        // Hide reports
-        reportContainer.style.display = 'none';
-        feedbackPanel.style.display = 'none';
-        
-        // Reset raw content
         rawSearchContent.textContent = 'Awaiting step...';
         rawReaderContent.textContent = 'Awaiting step...';
-        reportContent.innerHTML = '';
-        feedbackContent.innerHTML = '';
-        criticScore.textContent = 'SCORE: --';
     }
 
     // ── Helper: Update Step Card Visuals ──
-    function updateStepState(stepKey, state, labelText) {
+    function updateStepState(stepKey, state) {
         const step = steps[stepKey];
         if (!step) return;
 
-        // Reset classes
         step.card.classList.remove('active', 'done');
-        step.status.className = 'step-status';
 
         if (state === 'running') {
             step.card.classList.add('active');
-            step.status.classList.add('status-running');
-            step.status.innerHTML = `<span class="pulsing-dot"></span> ${labelText}`;
         } else if (state === 'done') {
             step.card.classList.add('done');
-            step.status.classList.add('status-done');
-            step.status.innerHTML = `✓ ${labelText}`;
-        } else if (state === 'failed') {
-            step.status.classList.add('status-waiting');
-            step.status.style.color = '#ff5a1a';
-            step.status.textContent = labelText;
-        } else {
-            step.status.classList.add('status-waiting');
-            step.status.textContent = labelText;
         }
     }
 
@@ -218,80 +252,118 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleStreamEvent(eventObj) {
         const { event, data } = eventObj;
         
+        // Find current AI bubble DOM elements
+        const aiBubble = currentAiMsgBubbleId ? document.getElementById(currentAiMsgBubbleId) : null;
+        
         switch (event) {
             // Search Step
             case 'search_start':
-                updateStepState('search', 'running', 'RUNNING');
+                updateStepState('search', 'running');
                 rawSearchContent.textContent = 'Searching the web for recent and reliable information...';
                 break;
             case 'search_done':
-                updateStepState('search', 'done', 'DONE');
+                updateStepState('search', 'done');
                 rawSearchContent.textContent = data;
                 break;
             case 'search_failed':
-                updateStepState('search', 'failed', 'FAILED');
+                updateStepState('search', 'failed');
                 rawSearchContent.textContent = data;
                 break;
 
             // Reader Step
             case 'reader_start':
-                updateStepState('reader', 'running', 'RUNNING');
+                updateStepState('reader', 'running');
                 rawReaderContent.textContent = 'Scraping and cleaning HTML content from the top search results URL...';
                 break;
             case 'reader_done':
-                updateStepState('reader', 'done', 'DONE');
+                updateStepState('reader', 'done');
                 rawReaderContent.textContent = data;
                 break;
             case 'reader_failed':
-                updateStepState('reader', 'failed', 'FAILED');
+                updateStepState('reader', 'failed');
                 rawReaderContent.textContent = data;
                 break;
 
             // Writer Step
             case 'writer_start':
-                updateStepState('writer', 'running', 'RUNNING');
+                updateStepState('writer', 'running');
                 break;
             case 'writer_done':
-                updateStepState('writer', 'done', 'DONE');
-                
-                // Show report container & render markdown
-                reportContainer.style.display = 'block';
-                reportContent.innerHTML = marked.parse(data);
-                
-                // Configure Download Button
-                const blob = new Blob([data], { type: 'text/markdown' });
-                const url = URL.createObjectURL(blob);
-                downloadBtn.href = url;
-                downloadBtn.download = `research_report_${Date.now()}.md`;
+                updateStepState('writer', 'done');
+                if (aiBubble) {
+                    // Hide loading indicator
+                    const loadingEl = aiBubble.querySelector('.ai-loading');
+                    if (loadingEl) loadingEl.style.display = 'none';
+
+                    // Show report wrapper
+                    const reportWrapper = aiBubble.querySelector('.report-content-wrapper');
+                    const reportText = aiBubble.querySelector('.report-text');
+                    const downloadBtn = aiBubble.querySelector('.btn-download');
+                    
+                    if (reportWrapper && reportText) {
+                        reportWrapper.style.display = 'block';
+                        reportText.innerHTML = marked.parse(data);
+                        
+                        // Set up download blob
+                        const blob = new Blob([data], { type: 'text/markdown' });
+                        const url = URL.createObjectURL(blob);
+                        downloadBtn.href = url;
+                        downloadBtn.download = `research_report_${Date.now()}.md`;
+                    }
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }
                 break;
             case 'writer_failed':
-                updateStepState('writer', 'failed', 'FAILED');
-                reportContainer.style.display = 'block';
-                reportContent.textContent = data;
+                updateStepState('writer', 'failed');
+                if (aiBubble) {
+                    const loadingEl = aiBubble.querySelector('.ai-loading');
+                    if (loadingEl) loadingEl.style.display = 'none';
+
+                    const reportWrapper = aiBubble.querySelector('.report-content-wrapper');
+                    const reportText = aiBubble.querySelector('.report-text');
+                    if (reportWrapper && reportText) {
+                        reportWrapper.style.display = 'block';
+                        reportText.innerHTML = `<span style="color:#ff5a1a;">Report generation failed: ${data}</span>`;
+                    }
+                }
                 break;
 
             // Critic Step
             case 'critic_start':
-                updateStepState('critic', 'running', 'RUNNING');
+                updateStepState('critic', 'running');
                 break;
             case 'critic_done':
-                updateStepState('critic', 'done', 'DONE');
-                feedbackPanel.style.display = 'block';
-                
-                // Extract score if possible (e.g. Score: 8/10, or just 8/10)
-                const scoreMatch = data.match(/([0-9.]+\/10)/i) || data.match(/Score:\s*([0-9.]+)/i);
-                if (scoreMatch) {
-                    criticScore.textContent = `SCORE: ${scoreMatch[1].includes('/10') ? scoreMatch[1] : scoreMatch[1] + '/10'}`;
-                } else {
-                    criticScore.textContent = 'EVALUATED';
+                updateStepState('critic', 'done');
+                if (aiBubble) {
+                    const feedbackWrapper = aiBubble.querySelector('.feedback-content-wrapper');
+                    const feedbackText = aiBubble.querySelector('.feedback-text');
+                    const criticScoreBox = aiBubble.querySelector('.critic-score-box');
+
+                    if (feedbackWrapper && feedbackText) {
+                        feedbackWrapper.style.display = 'block';
+                        feedbackText.innerHTML = marked.parse(data);
+
+                        // Extract score if possible (e.g. Score: 8/10, or just 8/10)
+                        const scoreMatch = data.match(/([0-9.]+\/10)/i) || data.match(/Score:\s*([0-9.]+)/i);
+                        if (scoreMatch) {
+                            criticScoreBox.textContent = `SCORE: ${scoreMatch[1].includes('/10') ? scoreMatch[1] : scoreMatch[1] + '/10'}`;
+                        } else {
+                            criticScoreBox.textContent = 'EVALUATED';
+                        }
+                    }
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
                 }
-                
-                feedbackContent.innerHTML = marked.parse(data);
                 break;
             case 'critic_failed':
-                updateStepState('critic', 'failed', 'FAILED');
-                feedbackPanel.style.display = 'block';
-                feedbackContent.textContent = data;
+                updateStepState('critic', 'failed');
+                if (aiBubble) {
+                    const feedbackWrapper = aiBubble.querySelector('.feedback-content-wrapper');
+                    const feedbackText = aiBubble.querySelector('.feedback-text');
+                    if (feedbackWrapper && feedbackText) {
+                        feedbackWrapper.style.display = 'block';
+                        feedbackText.innerHTML = `<span style="color:#ff5a1a;">Evaluation failed: ${data}</span>`;
+                    }
+                }
                 break;
                 
             case 'complete':

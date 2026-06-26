@@ -39,163 +39,105 @@
         </div>
     </header>
 
-    <div class="container">
-        <!-- Central Operations Area -->
-        <main class="hero-section">
-            <h1 class="main-title">Build multimodal AI Agents</h1>
-            
-            <!-- Modern Prompt Box Card -->
-            <div class="prompt-box">
-                <textarea id="topicInput" placeholder="Build a negotiation trainer that roleplays tough buyer objections and gives feedback..." rows="3"></textarea>
-                <div class="prompt-footer">
-                    <button class="btn-secondary">
-                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z"/>
-                        </svg>
-                        Blank canvas
-                    </button>
-                    <div class="prompt-footer-right">
-                        <span class="keyboard-hint">press <kbd>Enter</kbd></span>
-                        <button id="runBtn" class="btn-submit" title="Run Pipeline">
-                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="12" y1="19" x2="12" y2="5"/>
-                                <polyline points="5 12 12 5 19 12"/>
-                            </svg>
-                        </button>
-                    </div>
+    <div class="app-layout">
+        <!-- Left Sidebar: Live Agent Workstation -->
+        <aside class="sidebar-left">
+            <div class="sidebar-header">
+                <svg class="sidebar-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="16 18 22 12 16 6"/>
+                    <polyline points="8 6 2 12 8 18"/>
+                </svg>
+                <span>Agent Workstation</span>
+            </div>
+            <div class="sidebar-content">
+                <div class="sidebar-desc">Real-time tool execution, scraped sources, and agent thoughts are shown below.</div>
+                
+                <!-- Live execution steps -->
+                <div class="log-section">
+                    <div class="log-title">🔍 Search Logs</div>
+                    <pre class="log-box" id="rawSearchContent">Awaiting pipeline start...</pre>
+                </div>
+
+                <div class="log-section">
+                    <div class="log-title">📄 Scrape Logs</div>
+                    <pre class="log-box" id="rawReaderContent">Awaiting pipeline start...</pre>
                 </div>
             </div>
+        </aside>
 
-            <!-- Example chips under prompt box -->
-            <div class="examples-row">
-                <span class="examples-title">TRY →</span>
-                <span class="example-chip" data-topic="LLM agents 2025">LLM agents 2025</span>
-                <span class="example-chip" data-topic="CRISPR gene editing">CRISPR gene editing</span>
-                <span class="example-chip" data-topic="Fusion energy progress">Fusion energy progress</span>
+        <!-- Right / Main Section -->
+        <main class="main-workspace">
+            <!-- Compact Pipeline Status Indicator at the Top -->
+            <header class="pipeline-status-bar">
+                <div class="status-steps">
+                    <div class="status-step" id="step-search">
+                        <div class="status-step-icon">01</div>
+                        <span class="status-step-label">Search</span>
+                    </div>
+                    <div class="status-step-divider"></div>
+                    <div class="status-step" id="step-reader">
+                        <div class="status-step-icon">02</div>
+                        <span class="status-step-label">Scrape</span>
+                    </div>
+                    <div class="status-step-divider"></div>
+                    <div class="status-step" id="step-writer">
+                        <div class="status-step-icon">03</div>
+                        <span class="status-step-label">Write</span>
+                    </div>
+                    <div class="status-step-divider"></div>
+                    <div class="status-step" id="step-critic">
+                        <div class="status-step-icon">04</div>
+                        <span class="status-step-label">Critic</span>
+                    </div>
+                </div>
+                <div class="pipeline-live-status" id="pipelineLiveStatus">Awaiting research topic...</div>
+            </header>
+
+
+            <!-- Chat History Area -->
+            <div class="chat-container" id="chatContainer">
+                <!-- Welcome Message -->
+                <div class="chat-welcome" id="chatWelcome">
+                    <h1 class="welcome-title">ResearchMind 🔬</h1>
+                    <p class="welcome-desc">Enter any research topic below. Our multi-agent AI system will search, scrape, synthesize, and critique a report for you.</p>
+                </div>
+                <!-- Chat messages will be appended here dynamically -->
+            </div>
+
+            <!-- Bottom Prompt Box Area -->
+            <div class="input-panel">
+                <div class="prompt-box">
+                    <textarea id="topicInput" placeholder="Enter a topic to research..." rows="1"></textarea>
+                    <div class="prompt-footer">
+                        <button class="btn-secondary" id="clearHistoryBtn">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3 6 5 6 21 6"/>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                            Clear History
+                        </button>
+                        <div class="prompt-footer-right">
+                            <span class="keyboard-hint">press <kbd>Enter</kbd></span>
+                            <button id="runBtn" class="btn-submit" title="Run Pipeline">
+                                <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="12" y1="19" x2="12" y2="5"/>
+                                    <polyline points="5 12 12 5 19 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <!-- Example chips -->
+                <div class="examples-row">
+                    <span class="examples-title">TRY →</span>
+                    <span class="example-chip" data-topic="LLM agents 2025">LLM agents 2025</span>
+                    <span class="example-chip" data-topic="CRISPR gene editing">CRISPR gene editing</span>
+                    <span class="example-chip" data-topic="Fusion energy progress">Fusion energy progress</span>
+                </div>
             </div>
         </main>
-
-        <!-- Horizontal Pipeline Step Cards -->
-        <section class="pipeline-horizontal">
-            <div class="section-heading">Pipeline Execution</div>
-            <div class="pipeline-grid">
-                <!-- Step 01: Search Agent -->
-                <div class="step-card" id="step-search">
-                    <div class="step-icon-wrapper">
-                        <svg class="step-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        </svg>
-                    </div>
-                    <div class="step-header">
-                        <span class="step-num">01</span>
-                        <span class="step-title">Search Agent</span>
-                        <span class="step-status status-waiting" id="status-search">WAITING</span>
-                    </div>
-                    <div class="step-desc">Gathers recent web information</div>
-                </div>
-
-                <!-- Step 02: Reader Agent -->
-                <div class="step-card" id="step-reader">
-                    <div class="step-icon-wrapper">
-                        <svg class="step-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <polyline points="14 2 14 8 20 8"></polyline>
-                            <line x1="16" y1="13" x2="8" y2="13"></line>
-                            <line x1="16" y1="17" x2="8" y2="17"></line>
-                            <polyline points="10 9 9 9 8 9"></polyline>
-                        </svg>
-                    </div>
-                    <div class="step-header">
-                        <span class="step-num">02</span>
-                        <span class="step-title">Reader Agent</span>
-                        <span class="step-status status-waiting" id="status-reader">WAITING</span>
-                    </div>
-                    <div class="step-desc">Scrapes & extracts deep content</div>
-                </div>
-
-                <!-- Step 03: Writer Chain -->
-                <div class="step-card" id="step-writer">
-                    <div class="step-icon-wrapper">
-                        <svg class="step-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 20h9"></path>
-                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                        </svg>
-                    </div>
-                    <div class="step-header">
-                        <span class="step-num">03</span>
-                        <span class="step-title">Writer Chain</span>
-                        <span class="step-status status-waiting" id="status-writer">WAITING</span>
-                    </div>
-                    <div class="step-desc">Drafts the full research report</div>
-                </div>
-
-                <!-- Step 04: Critic Chain -->
-                <div class="step-card" id="step-critic">
-                    <div class="step-icon-wrapper">
-                        <svg class="step-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                        </svg>
-                    </div>
-                    <div class="step-header">
-                        <span class="step-num">04</span>
-                        <span class="step-title">Critic Chain</span>
-                        <span class="step-status status-waiting" id="status-critic">WAITING</span>
-                    </div>
-                    <div class="step-desc">Reviews & scores the report</div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Dynamic Results Section -->
-        <section class="results-section" id="resultsSection">
-            <div class="divider"></div>
-            <div class="section-heading">Results</div>
-
-            <!-- Accordion: Raw Search Outputs -->
-            <details id="detailsSearch">
-                <summary>🔍 Search Results (raw)</summary>
-                <div class="result-panel">
-                    <div class="result-panel-title">Search Agent Output</div>
-                    <pre class="result-content" id="rawSearchContent">Searching...</pre>
-                </div>
-            </details>
-
-            <!-- Accordion: Raw Scraped Content -->
-            <details id="detailsReader">
-                <summary>📄 Scraped Content (raw)</summary>
-                <div class="result-panel">
-                    <div class="result-panel-title">Reader Agent Output</div>
-                    <pre class="result-content" id="rawReaderContent">Awaiting scrape...</pre>
-                </div>
-            </details>
-
-            <!-- Final Research Report -->
-            <div class="report-container" id="reportContainer" style="display: none;">
-                <div class="report-panel">
-                    <div class="panel-label orange">📝 Final Research Report</div>
-                    <div class="markdown-body" id="reportContent"></div>
-                </div>
-                <a id="downloadBtn" class="btn-download" href="#" download="research_report.md">
-                    <span>⬇ Download Report (.md)</span>
-                </a>
-            </div>
-
-            <!-- Critic Feedback Panel -->
-            <div class="feedback-panel" id="feedbackPanel" style="display: none;">
-                <div class="panel-label green">🧐 Critic Feedback</div>
-                <div class="critic-score-box" id="criticScore">SCORE: --</div>
-                <div class="markdown-body" id="feedbackContent"></div>
-            </div>
-        </section>
-
-        <!-- Footer -->
-        <footer class="footer">
-            ResearchMind · Powered by LangChain multi-agent pipeline · Served with FastAPI
-        </footer>
     </div>
+
 
     <script src="/static/js/app.js"></script>
 </body>
