@@ -27,6 +27,8 @@ def web_search(query : str) -> str:
 def scrape_url(url: str) -> str:
     """Scrape and return clean text content from a given URL for deeper reading."""
     try:
+        # Sanitize URL by removing whitespace, newlines, and trailing/leading delimiters
+        url = url.strip().replace("\n", "").replace("\r", "").strip("()[]\"'")
         resp = requests.get(url, timeout=8, headers={"User-Agent": "Mozilla/5.0"})
         soup = BeautifulSoup(resp.text, "html.parser")
         for tag in soup(["script", "style", "nav", "footer"]):
@@ -34,3 +36,4 @@ def scrape_url(url: str) -> str:
         return soup.get_text(separator=" ", strip=True)[:3000]
     except Exception as e:
         return f"Could not scrape URL: {str(e)}"
+

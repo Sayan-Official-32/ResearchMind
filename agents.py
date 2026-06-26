@@ -9,7 +9,8 @@ from dotenv import load_dotenv  # type: ignore[missing-import]
 load_dotenv()
 
 #model setup 
-llm = ChatMistralAI(model="mistral-large-latest", temperature=0)
+llm = ChatMistralAI(model="mistral-large-latest", temperature=0, max_retries=6)
+
 
 
 #1st agent 

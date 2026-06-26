@@ -38,11 +38,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // ── Auto-resize Input Textarea ──
+    topicInput.addEventListener('input', autoResizeInput);
+    function autoResizeInput() {
+        topicInput.style.height = 'auto';
+        topicInput.style.height = topicInput.scrollHeight + 'px';
+    }
+
     // ── Example Chips Handler ──
     exampleChips.forEach(chip => {
         chip.addEventListener('click', () => {
             topicInput.value = chip.getAttribute('data-topic');
             topicInput.focus();
+            autoResizeInput();
         });
     });
 
@@ -53,6 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
             runPipeline();
         }
     });
+
 
     runBtn.addEventListener('click', runPipeline);
 
@@ -134,11 +143,28 @@ document.addEventListener('DOMContentLoaded', () => {
         topicInput.disabled = running;
         runBtn.disabled = running;
         if (running) {
-            runBtn.innerHTML = `<span>⏳ Running Pipeline...</span>`;
+            runBtn.innerHTML = `
+                <svg class="spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="2" x2="12" y2="6"/>
+                    <line x1="12" y1="18" x2="12" y2="22"/>
+                    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
+                    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+                    <line x1="2" y1="12" x2="6" y2="12"/>
+                    <line x1="18" y1="12" x2="22" y2="12"/>
+                    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
+                    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+                </svg>
+            `;
         } else {
-            runBtn.innerHTML = `<span>⚡ Run Research Pipeline</span>`;
+            runBtn.innerHTML = `
+                <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="19" x2="12" y2="5"/>
+                    <polyline points="5 12 12 5 19 12"/>
+                </svg>
+            `;
         }
     }
+
 
     // ── Helper: Reset UI ──
     function resetUI() {
@@ -177,7 +203,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (state === 'done') {
             step.card.classList.add('done');
             step.status.classList.add('status-done');
-            step.textContent = '';
             step.status.innerHTML = `✓ ${labelText}`;
         } else if (state === 'failed') {
             step.status.classList.add('status-waiting');
@@ -253,10 +278,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateStepState('critic', 'done', 'DONE');
                 feedbackPanel.style.display = 'block';
                 
-                // Extract score if possible (e.g. Score: 8/10)
-                const scoreMatch = data.match(/Score:\s*([0-9.]+\/10)/i);
+                // Extract score if possible (e.g. Score: 8/10, or just 8/10)
+                const scoreMatch = data.match(/([0-9.]+\/10)/i) || data.match(/Score:\s*([0-9.]+)/i);
                 if (scoreMatch) {
-                    criticScore.textContent = `SCORE: ${scoreMatch[1]}`;
+                    criticScore.textContent = `SCORE: ${scoreMatch[1].includes('/10') ? scoreMatch[1] : scoreMatch[1] + '/10'}`;
                 } else {
                     criticScore.textContent = 'EVALUATED';
                 }

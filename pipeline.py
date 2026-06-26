@@ -1,7 +1,19 @@
 import time
+import datetime
 from typing import Generator
 from agents import build_reader_agent, build_search_agent, writer_chain, critic_chain
 from rich import print   # type: ignore[missing-import]
+
+def _extract_content_text(content) -> str:
+    if isinstance(content, list):
+        texts = []
+        for part in content:
+            if isinstance(part, dict) and part.get("type") == "text":
+                texts.append(part.get("text", ""))
+            elif isinstance(part, str):
+                texts.append(part)
+        return "\n".join(texts)
+    return str(content)
 
 def run_research_pipeline(topic: str) -> dict:
     state = {}
@@ -12,11 +24,12 @@ def run_research_pipeline(topic: str) -> dict:
     print("=" * 50)
 
     try:
+        current_date = datetime.datetime.now().strftime("%B %Y")
         search_agent = build_search_agent()
         search_result = search_agent.invoke({
-            "messages": [("user", f"Find recent, reliable and detailed information about: {topic}")]
+            "messages": [("user", f"Find recent, reliable and detailed information (as of {current_date}) about: {topic}")]
         })
-        state["search_results"] = search_result['messages'][-1].content
+        state["search_results"] = _extract_content_text(search_result['messages'][-1].content)
     except Exception as e:
         state["search_results"] = f"Search failed: {str(e)}"
 
@@ -36,10 +49,10 @@ def run_research_pipeline(topic: str) -> dict:
             "messages": [("user",
                 f"Based on the following search results about '{topic}', "
                 f"pick the most relevant URL and scrape it for deeper content.\n\n"
-                f"Search Results:\n{state['search_results'][:800]}"
+                f"Search Results:\n{state['search_results']}"
             )]
         })
-        state['scraped_content'] = reader_result['messages'][-1].content
+        state['scraped_content'] = _extract_content_text(reader_result['messages'][-1].content)
     except Exception as e:
         state['scraped_content'] = f"Scraping failed: {str(e)}"
 
@@ -94,11 +107,12 @@ def run_research_pipeline_stream(topic: str) -> Generator[dict, None, None]:
     # Step 1 — Search Agent
     yield {"event": "search_start"}
     try:
+        current_date = datetime.datetime.now().strftime("%B %Y")
         search_agent = build_search_agent()
         search_result = search_agent.invoke({
-            "messages": [("user", f"Find recent, reliable and detailed information about: {topic}")]
+            "messages": [("user", f"Find recent, reliable and detailed information (as of {current_date}) about: {topic}")]
         })
-        state["search_results"] = search_result['messages'][-1].content
+        state["search_results"] = _extract_content_text(search_result['messages'][-1].content)
         yield {"event": "search_done", "data": state["search_results"]}
     except Exception as e:
         state["search_results"] = f"Search failed: {str(e)}"
@@ -113,10 +127,10 @@ def run_research_pipeline_stream(topic: str) -> Generator[dict, None, None]:
             "messages": [("user",
                 f"Based on the following search results about '{topic}', "
                 f"pick the most relevant URL and scrape it for deeper content.\n\n"
-                f"Search Results:\n{state['search_results'][:800]}"
+                f"Search Results:\n{state['search_results']}"
             )]
         })
-        state['scraped_content'] = reader_result['messages'][-1].content
+        state['scraped_content'] = _extract_content_text(reader_result['messages'][-1].content)
         yield {"event": "reader_done", "data": state['scraped_content']}
     except Exception as e:
         state['scraped_content'] = f"Scraping failed: {str(e)}"
