@@ -1,555 +1,269 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ResearchMind · Premium AI Research Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>ResearchMind · Multi-Agent AI Research System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
-    <!-- Marked JS for Markdown Rendering -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
     <!-- Top Navigation Bar -->
-    <header class="top-nav">
-        <div class="nav-left">
-            <div class="brand">
-                <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
-                    <path d="M12 6v12"/>
-                    <path d="M8 10h8"/>
-                </svg>
-                <span class="brand-name">ResearchMind</span>
-            </div>
-            <nav class="nav-links">
-                <a href="#" class="nav-link active" id="btnNewResearch">
-                    <svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-                    </svg>
-                    New Research
-                </a>
-                <a href="#" class="nav-link">
-                    <svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14 2 14 8 20 8"/>
-                    </svg>
-                    Templates
-                </a>
-                <a href="#" class="nav-link">
-                    <svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                    </svg>
-                    Projects
-                </a>
-                <a href="#" class="nav-link">
-                    <svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                    </svg>
-                    Export Center
-                </a>
-            </nav>
+    <header class="top-nav" style="padding: 0 1rem; display: flex; align-items: center; justify-content: space-between;">
+        <button id="statusBarLeftToggleBtn" class="sidebar-toggle-btn" title="Toggle Left Sidebar">
+            <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <line x1="9" y1="3" x2="9" y2="21"/>
+            </svg>
+        </button>
+
+        <div class="nav-center" style="margin: 0 auto; display: flex; align-items: center; gap: 0.4rem;">
+            <span class="nav-brand" style="font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; color: #ffffff;">ResearchMind 🔬</span>
         </div>
-        <div class="nav-right">
-            <div class="credits-badge">
-                <svg class="credits-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-                </svg>
-                <span>Credits: <strong id="creditsCount">8,742</strong></span>
-            </div>
-            <button class="theme-toggle-btn" id="themeToggleBtn" title="Toggle Light/Dark Mode">
-                <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.07" x2="5.64" y2="17.64"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                </svg>
-                <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                </svg>
-            </button>
-            <button class="nav-action-btn notification-btn" title="Notifications">
-                <svg class="bell-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                </svg>
-                <span class="notification-dot"></span>
-            </button>
-            <img class="avatar" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&h=80&q=80" alt="User Profile">
-        </div>
+
+        <button id="statusBarRightToggleBtn" class="sidebar-toggle-btn" title="Toggle Right Sidebar">
+            <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform: scaleX(-1);">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <line x1="9" y1="3" x2="9" y2="21"/>
+            </svg>
+        </button>
     </header>
 
     <div class="app-layout">
-        <!-- Left Sidebar: Global Navigation & History -->
-        <aside class="sidebar-left">
-            <div class="sidebar-scroll-content">
-                <nav class="sidebar-menu">
-                    <a href="#" class="sidebar-item active">
-                        <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/>
-                        </svg>
-                        Dashboard
-                    </a>
-                    <a href="#" class="sidebar-item" id="sidebarNewResearch">
-                        <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-                        </svg>
-                        New Research
-                    </a>
-                    <a href="#" class="sidebar-item">
-                        <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                        </svg>
-                        Research History
-                    </a>
-                    <a href="#" class="sidebar-item">
-                        <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
-                        </svg>
-                        Saved Reports
-                    </a>
-                    <a href="#" class="sidebar-item">
-                        <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/>
-                        </svg>
-                        Templates
-                    </a>
-                    <a href="#" class="sidebar-item">
-                        <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                        </svg>
-                        Favorites
-                    </a>
-                    <a href="#" class="sidebar-item">
-                        <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                        </svg>
-                        Export Center
-                    </a>
-                    <a href="#" class="sidebar-item">
-                        <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                        </svg>
-                        Settings
-                    </a>
-                </nav>
 
-                <div class="recent-research-section">
-                    <div class="recent-header">
-                        <span class="recent-title">RECENT RESEARCH</span>
-                        <a href="#" class="view-all-link" id="clearHistoryBtn">Clear All</a>
+        <!-- ═══ LEFT SIDEBAR: Agent Workstation ═══ -->
+        <aside class="sidebar-left">
+            <div class="sidebar-header">
+                <svg class="sidebar-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="16 18 22 12 16 6"/>
+                    <polyline points="8 6 2 12 8 18"/>
+                </svg>
+                <span>Agent Workstation</span>
+            </div>
+            <div class="sidebar-content" id="sidebarContent">
+                <div class="sidebar-desc">Real-time writer draft synthesis and critic reviews.</div>
+
+                <!-- Writer Logs -->
+                <div class="log-section">
+                    <div class="log-title">
+                        <span class="log-step-dot dot-writer"></span>
+                        ✍️ Writer Logs
                     </div>
-                    <ul class="recent-list" id="recentResearchList">
-                        <!-- Dynamic list of recent research queries -->
-                        <li class="recent-placeholder">No research history yet.</li>
-                    </ul>
+                    <pre class="log-box" id="rawWriterContent">Awaiting pipeline start...</pre>
                 </div>
 
-                <div class="upgrade-card">
-                    <div class="upgrade-header">
-                        <div class="crown-icon-container">
-                            <svg class="crown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M3 20h18"/>
+                <!-- Critic Logs -->
+                <div class="log-section">
+                    <div class="log-title">
+                        <span class="log-step-dot dot-critic"></span>
+                        🧪 Critic Logs
+                    </div>
+                    <pre class="log-box" id="rawCriticContent">Awaiting pipeline start...</pre>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- ═══ CENTER: Main Chat Workspace ═══ -->
+        <main class="main-workspace">
+            <!-- Compact Pipeline Status Bar -->
+            <header class="pipeline-status-bar" id="pipelineStatusBar">
+                <div class="pipeline-visualizer">
+                    <!-- Left: Header info -->
+                    <div class="pipeline-title-group">
+                        <span class="pipeline-main-title">Research Pipeline</span>
+                        <span class="pipeline-live-badge" id="pipelineLiveBadge">
+                            <span class="live-dot"></span>Live
+                        </span>
+                    </div>
+
+                    <!-- Middle: Flow diagram -->
+                    <div class="pipeline-flow">
+                        <!-- Step 1: Search -->
+                        <div class="flow-step" id="flow-step-search">
+                            <div class="flow-circle">
+                                <svg class="flow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                                </svg>
+                                <div class="flow-check">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                </div>
+                            </div>
+                            <span class="flow-label">Search</span>
+                            <span class="flow-sublabel">Find relevant sources</span>
+                        </div>
+
+                        <div class="flow-arrow">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
                             </svg>
                         </div>
-                        <span class="upgrade-title">Upgrade to Pro</span>
+
+                        <!-- Step 2: Scrape -->
+                        <div class="flow-step" id="flow-step-reader">
+                            <div class="flow-circle">
+                                <svg class="flow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+                                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                                </svg>
+                                <div class="flow-check">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                </div>
+                            </div>
+                            <span class="flow-label">Scrape</span>
+                            <span class="flow-sublabel">Extract content</span>
+                        </div>
+
+                        <div class="flow-arrow">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                            </svg>
+                        </div>
+
+                        <!-- Step 3: Write -->
+                        <div class="flow-step" id="flow-step-writer">
+                            <div class="flow-circle">
+                                <svg class="flow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                                </svg>
+                                <div class="flow-check">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                </div>
+                            </div>
+                            <span class="flow-label">Write</span>
+                            <span class="flow-sublabel">Generate report</span>
+                        </div>
+
+                        <div class="flow-arrow">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                            </svg>
+                        </div>
+
+                        <!-- Step 4: Critic -->
+                        <div class="flow-step" id="flow-step-critic">
+                            <div class="flow-circle">
+                                <svg class="flow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                    <polygon points="12 11 13.5 14.5 17 14.5 14 16.5 15 20 12 18 9 20 10 16.5 7 14.5 10.5 14.5"/>
+                                </svg>
+                                <div class="flow-check">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                </div>
+                            </div>
+                            <span class="flow-label">Critic</span>
+                            <span class="flow-sublabel">Evaluate quality</span>
+                        </div>
                     </div>
-                    <p class="upgrade-desc">Unlock unlimited research, more credits & advanced features.</p>
-                    <button class="upgrade-btn">Upgrade Now</button>
+
+                    <!-- Vertical divider -->
+                    <div class="pipeline-divider"></div>
+
+                    <!-- Right: Progress wheel -->
+                    <div class="pipeline-progress-section">
+                        <div class="progress-ring-container">
+                            <svg class="progress-ring-svg" width="46" height="46">
+                                <circle class="progress-ring-bg" stroke="rgba(255,255,255,0.06)" stroke-width="3" fill="transparent" r="20" cx="23" cy="23"/>
+                                <circle class="progress-ring-fill" id="progressRingFill" stroke="var(--accent-green)" stroke-width="3" fill="transparent" r="20" cx="23" cy="23" stroke-dasharray="125.6" stroke-dashoffset="125.6" stroke-linecap="round"/>
+                            </svg>
+                            <span class="progress-percentage-text" id="progressPercentText">0%</span>
+                        </div>
+                        <div class="progress-info">
+                            <span class="progress-title">Overall Progress</span>
+                            <span class="progress-time-text" id="progressTimeText">🕒 Ready</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Chat History Area -->
+            <div class="chat-container" id="chatContainer">
+                <div class="chat-welcome" id="chatWelcome">
+                    <h1 class="welcome-title">ResearchMind 🔬</h1>
+                    <p class="welcome-desc" id="welcomeMessage">Enter any research topic below. Our multi-agent AI system will search, scrape, synthesize, and critique a report for you.</p>
+                </div>
+            </div>
+
+            <!-- Bottom Prompt Box -->
+            <div class="input-panel">
+                <div class="prompt-box">
+                    <textarea id="topicInput" placeholder="Enter a topic to research..." rows="1"></textarea>
+                    <div class="prompt-footer">
+                        <button class="btn-secondary" id="clearHistoryBtn">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3 6 5 6 21 6"/>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                            Clear History
+                        </button>
+                        <div class="prompt-footer-right">
+                            <span class="keyboard-hint">press <kbd>Enter</kbd></span>
+                            <button id="runBtn" class="btn-submit" title="Run Pipeline">
+                                <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="12" y1="19" x2="12" y2="5"/>
+                                    <polyline points="5 12 12 5 19 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="examples-row">
+                    <span class="examples-title">TRY →</span>
+                    <span class="example-chip" data-topic="LLM agents 2026">LLM agents 2026</span>
+                    <span class="example-chip" data-topic="AGI timelines and metrics">AGI timelines</span>
+                    <span class="example-chip" data-topic="Room-temperature superconductivity replication updates">Room-temp superconductors</span>
+                </div>
+                <div class="input-info-text" style="font-size: 0.68rem; color: var(--text-muted); text-align: center; margin-top: 0.45rem; font-family: var(--font-sans); letter-spacing: 0.01em;">
+                    💡 Enter a research topic to trigger the multi-agent search, scrape, write, and critique pipeline automatically.
+                </div>
+            </div>
+        </main>
+
+        <!-- ═══ RIGHT SIDEBAR: Live Activity Feed ═══ -->
+        <aside class="sidebar-right">
+            <div class="sidebar-header">
+                <svg class="sidebar-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                <span>Live Activity</span>
+                <span class="activity-badge" id="activityBadge">IDLE</span>
+            </div>
+            <!-- Activity Feed -->
+            <div class="activity-feed" id="activityFeed">
+                <div class="activity-empty" id="activityEmpty">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    <p>Activity will appear here when you start a research run.</p>
+                </div>
+            </div>
+
+            <!-- Top Sources Section -->
+            <div class="top-sources-section">
+                <div class="sources-header">
+                    <span class="sources-title">Top Sources</span>
+                    <a href="#" class="view-all-link" id="viewAllSourcesBtn">View all</a>
+                </div>
+                <div class="sources-list" id="sourcesList">
+                    <div class="sources-empty" id="sourcesEmpty">
+                        Awaiting search results...
+                    </div>
                 </div>
             </div>
         </aside>
 
-        <!-- Main Workspace (Center + Right layout) -->
-        <main class="main-workspace">
-            <div class="workspace-body">
-                <!-- Center Workspace Column -->
-                <div class="workspace-center">
-                    
-                    <!-- 5. Research Input Section -->
-                    <section class="research-input-container">
-                        <h1 class="welcome-heading">What would you like to <span class="accent-text">research</span> today? <span class="sparkle-emoji">✦</span></h1>
-                        
-                        <div class="search-box-wrapper">
-                            <textarea id="topicInput" placeholder="e.g., Impact of AI on Healthcare, Future of Fusion Energy, CRISPR advancements..." rows="1"></textarea>
-                            <button id="runBtn" class="search-submit-btn" title="Start Research">
-                                <svg class="paper-plane-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                                </svg>
-                            </button>
-                        </div>
-
-                        <!-- 6. Research Mode Controls -->
-                        <div class="mode-controls">
-                            <label class="mode-label checked" id="control-deep">
-                                <input type="checkbox" id="chkDeepResearch" checked>
-                                <span class="custom-checkbox">
-                                    <svg class="check-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                        <polyline points="20 6 9 17 4 12"/>
-                                    </svg>
-                                </span>
-                                Deep Research
-                            </label>
-                            <label class="mode-label checked" id="control-citation">
-                                <input type="checkbox" id="chkCitationMode" checked>
-                                <span class="custom-checkbox">
-                                    <svg class="check-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                        <polyline points="20 6 9 17 4 12"/>
-                                    </svg>
-                                </span>
-                                Citation Mode
-                            </label>
-                            <label class="mode-label checked" id="control-academic">
-                                <input type="checkbox" id="chkAcademicMode" checked>
-                                <span class="custom-checkbox">
-                                    <svg class="check-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                        <polyline points="20 6 9 17 4 12"/>
-                                    </svg>
-                                </span>
-                                Academic Mode
-                            </label>
-                        </div>
-
-                        <!-- 7. Quick Topic Suggestions -->
-                        <div class="suggestions-row">
-                            <button class="suggest-chip" data-topic="AI Agents 2025">
-                                <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-                                </svg>
-                                AI Agents 2025
-                            </button>
-                            <button class="suggest-chip" data-topic="CRISPR Editing">
-                                <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M4.5 10.5C4.5 10.5 8 7 12 7C16 7 19.5 10.5 19.5 10.5M4.5 13.5C4.5 13.5 8 17 12 17C16 17 19.5 13.5 19.5 13.5"/><circle cx="6" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="18" cy="12" r="1"/>
-                                </svg>
-                                CRISPR Editing
-                            </button>
-                            <button class="suggest-chip" data-topic="Quantum AI">
-                                <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
-                                </svg>
-                                Quantum AI
-                            </button>
-                            <button class="suggest-chip" data-topic="SpaceX Starship">
-                                <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M12 2L2 22h20L12 2z"/>
-                                </svg>
-                                SpaceX Starship
-                            </button>
-                            <button class="suggest-chip" data-topic="Climate Change">
-                                <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M12 2a10 10 0 0 1 10 10c0 5.523-4.477 10-10 10S2 17.523 2 12A10 10 0 0 1 12 2z"/><path d="M12 6a6 6 0 0 1 6 6M12 8a4 4 0 0 1 4 4"/>
-                                </svg>
-                                Climate Change
-                            </button>
-                        </div>
-                    </section>
-
-                    <!-- 8 & 9. Research Pipeline & Progress Section -->
-                    <section class="pipeline-section-card">
-                        <div class="pipeline-card-left">
-                            <div class="pipeline-header">
-                                <span class="pipeline-title">Research Pipeline</span>
-                                <span class="live-indicator pulsing" id="pipelineLiveBadge">
-                                    <span class="live-dot"></span>
-                                    <span>Live</span>
-                                </span>
-                            </div>
-                            <div class="pipeline-stepper">
-                                <div class="stepper-step" id="step-search">
-                                    <div class="step-icon-circle">
-                                        <svg class="step-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                                        </svg>
-                                        <svg class="step-check-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                            <polyline points="20 6 9 17 4 12"/>
-                                        </svg>
-                                    </div>
-                                    <div class="step-details">
-                                        <span class="step-name">Search</span>
-                                        <span class="step-desc">Find relevant sources</span>
-                                    </div>
-                                </div>
-                                
-                                <div class="step-connector" id="connector-search-reader"></div>
-
-                                <div class="stepper-step" id="step-reader">
-                                    <div class="step-icon-circle">
-                                        <svg class="step-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                            <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-                                        </svg>
-                                        <svg class="step-check-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                            <polyline points="20 6 9 17 4 12"/>
-                                        </svg>
-                                    </div>
-                                    <div class="step-details">
-                                        <span class="step-name">Scrape</span>
-                                        <span class="step-desc">Extract content</span>
-                                    </div>
-                                </div>
-
-                                <div class="step-connector" id="connector-reader-writer"></div>
-
-                                <div class="stepper-step" id="step-writer">
-                                    <div class="step-icon-circle">
-                                        <svg class="step-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-                                        </svg>
-                                        <svg class="step-check-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                            <polyline points="20 6 9 17 4 12"/>
-                                        </svg>
-                                    </div>
-                                    <div class="step-details">
-                                        <span class="step-name">Write</span>
-                                        <span class="step-desc">Generate report</span>
-                                    </div>
-                                </div>
-
-                                <div class="step-connector" id="connector-writer-critic"></div>
-
-                                <div class="stepper-step" id="step-critic">
-                                    <div class="step-icon-circle">
-                                        <svg class="step-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                                        </svg>
-                                        <svg class="step-check-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                            <polyline points="20 6 9 17 4 12"/>
-                                        </svg>
-                                    </div>
-                                    <div class="step-details">
-                                        <span class="step-name">Critic</span>
-                                        <span class="step-desc">Evaluate quality</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="overall-progress-card">
-                            <span class="progress-card-title">Overall Progress</span>
-                            <div class="progress-gauge-container">
-                                <svg class="progress-ring" viewBox="0 0 80 80">
-                                    <circle class="progress-ring-bg" cx="40" cy="40" r="34" />
-                                    <circle class="progress-ring-fill" id="progressRingFill" cx="40" cy="40" r="34" stroke-dasharray="213.63" stroke-dashoffset="213.63" />
-                                </svg>
-                                <div class="progress-gauge-value" id="progressPercent">0%</div>
-                            </div>
-                            <span class="progress-time-sub" id="progressTimeText">Awaiting research...</span>
-                        </div>
-                    </section>
-
-                    <!-- 10. Research Statistics Cards -->
-                    <section class="stats-row-container">
-                        <div class="stat-card" id="stat-sources">
-                            <div class="stat-icon-wrapper blue">
-                                <svg class="stat-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-                                </svg>
-                            </div>
-                            <div class="stat-main">
-                                <span class="stat-label">Sources Found</span>
-                                <span class="stat-value" id="statValSources">0</span>
-                                <span class="stat-trend positive" id="statTrendSources">--</span>
-                            </div>
-                        </div>
-
-                        <div class="stat-card" id="stat-pages">
-                            <div class="stat-icon-wrapper cyan">
-                                <svg class="stat-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
-                                </svg>
-                            </div>
-                            <div class="stat-main">
-                                <span class="stat-label">Pages Scraped</span>
-                                <span class="stat-value" id="statValPages">0</span>
-                                <span class="stat-trend positive" id="statTrendPages">--</span>
-                            </div>
-                        </div>
-
-                        <div class="stat-card" id="stat-tokens">
-                            <div class="stat-icon-wrapper orange">
-                                <svg class="stat-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
-                                </svg>
-                            </div>
-                            <div class="stat-main">
-                                <span class="stat-label">Tokens Processed</span>
-                                <span class="stat-value" id="statValTokens">0</span>
-                                <span class="stat-trend positive" id="statTrendTokens">--</span>
-                            </div>
-                        </div>
-
-                        <div class="stat-card" id="stat-time">
-                            <div class="stat-icon-wrapper green">
-                                <svg class="stat-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                                </svg>
-                            </div>
-                            <div class="stat-main">
-                                <span class="stat-label">Research Time</span>
-                                <span class="stat-value" id="statValTime">0s</span>
-                                <span class="stat-trend positive" id="statTrendTime">--</span>
-                            </div>
-                        </div>
-
-                        <div class="stat-card" id="stat-score">
-                            <div class="stat-icon-wrapper purple">
-                                <svg class="stat-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                                </svg>
-                            </div>
-                            <div class="stat-main">
-                                <span class="stat-label">Quality Score</span>
-                                <span class="stat-value" id="statValScore">--</span>
-                                <span class="stat-trend text-only" id="statScoreText">Pending</span>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- 11 & 12. Research Report Workspace & Action Bar -->
-                    <section class="report-workspace-card">
-                        <div class="report-action-bar">
-                            <div class="action-bar-left">
-                                <span class="report-badge">Research Report</span>
-                                <span class="status-pill waiting" id="reportStatusPill">Awaiting</span>
-                            </div>
-                            <div class="action-bar-right">
-                                <button class="action-btn" id="btnCopyReport">
-                                    <svg class="action-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                                    </svg>
-                                    Copy
-                                </button>
-                                <button class="action-btn" id="btnDownloadPdf">
-                                    <svg class="action-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
-                                    </svg>
-                                    Download PDF
-                                </button>
-                                <button class="action-btn" id="btnDownloadDocx">
-                                    <svg class="action-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
-                                    </svg>
-                                    Download DOCX
-                                </button>
-                                <button class="action-btn icon-only" title="More Options">
-                                    <svg class="action-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="report-layout-container">
-                            <!-- Report Render Area -->
-                            <div class="report-display-body">
-                                <div class="chat-welcome-placeholder" id="reportWelcomePlaceholder">
-                                    <svg class="welcome-file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                                    </svg>
-                                    <h3>Awaiting Research Topic</h3>
-                                    <p>Submit a topic to generate your comprehensive research report. Live execution data and analytics will populate here as the pipeline runs.</p>
-                                </div>
-                                <div class="markdown-body report-text-output" id="reportTextOutput"></div>
-                            </div>
-
-                            <!-- 13. Table of Contents -->
-                            <aside class="table-of-contents-card" id="tocCard" style="display:none;">
-                                <div class="toc-header">Table of Contents</div>
-                                <ul class="toc-list" id="tocList">
-                                    <!-- Dynamic list of section headers -->
-                                </ul>
-                            </aside>
-                        </div>
-                    </section>
-                </div>
-
-                <!-- Right Workspace Column (Activity, Sources, Evaluation) -->
-                <div class="workspace-right">
-                    
-                    <!-- 14. Agent Activity Monitor -->
-                    <div class="right-card activity-monitor-card">
-                        <div class="card-header">
-                            <span class="card-title">Agent Activity Monitor</span>
-                            <span class="live-indicator pulsing" id="activityLiveBadge">
-                                <span class="live-dot"></span>
-                                <span>Live</span>
-                            </span>
-                        </div>
-                        <div class="timeline-container">
-                            <ul class="activity-timeline" id="activityTimeline">
-                                <li class="timeline-placeholder">Awaiting research startup...</li>
-                            </ul>
-                        </div>
-                        <button class="view-full-logs-btn" id="btnToggleFullLogs">View Full Logs</button>
-                    </div>
-
-                    <!-- 15. Top Sources Panel -->
-                    <div class="right-card top-sources-card">
-                        <div class="card-header">
-                            <span class="card-title">Top Sources</span>
-                            <a href="#" class="view-all-link">View all</a>
-                        </div>
-                        <div class="sources-list-container">
-                            <ul class="sources-list" id="topSourcesList">
-                                <li class="sources-placeholder">No sources referenced yet.</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <!-- 16. Critic Evaluation Panel -->
-                    <div class="right-card critic-evaluation-card">
-                        <div class="card-header">
-                            <span class="card-title">Critic Evaluation</span>
-                        </div>
-                        <div class="critic-evaluation-body">
-                            <div class="critic-score-row">
-                                <span class="critic-score-label">Overall Score</span>
-                                <div class="score-display-box" id="criticScoreBox">--</div>
-                            </div>
-                            <div class="evaluation-grid">
-                                <div class="eval-column strengths">
-                                    <div class="eval-column-title">
-                                        <svg class="eval-icon plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-                                        </svg>
-                                        Strengths
-                                    </div>
-                                    <ul class="eval-bullets" id="criticStrengthsList">
-                                        <li class="eval-placeholder">Pending critique...</li>
-                                    </ul>
-                                </div>
-                                <div class="eval-column improvements">
-                                    <div class="eval-column-title">
-                                        <svg class="eval-icon minus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                            <circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/>
-                                        </svg>
-                                        Areas to Improve
-                                    </div>
-                                    <ul class="eval-bullets" id="criticImprovementsList">
-                                        <li class="eval-placeholder">Pending critique...</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <!-- Raw logs overlay (displayed when clicking 'View Full Logs') -->
-    <div class="logs-overlay-modal" id="logsOverlayModal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>System Workstation Logs</h3>
-                <button class="close-modal-btn" id="btnCloseLogsModal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="modal-log-section">
-                    <h4>🔍 Search Agent Raw Outputs</h4>
-                    <pre class="modal-log-box" id="rawSearchContent">Awaiting pipeline start...</pre>
-                </div>
-                <div class="modal-log-section" style="margin-top: 1.5rem;">
-                    <h4>📄 Reader Agent Scraped Data</h4>
-                    <pre class="modal-log-box" id="rawReaderContent">Awaiting pipeline start...</pre>
-                </div>
-            </div>
-        </div>
     </div>
 
     <script src="/static/js/app.js"></script>

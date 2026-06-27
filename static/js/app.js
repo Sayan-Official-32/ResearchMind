@@ -1,111 +1,156 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // ── Selectors & DOM References ──
     const topicInput = document.getElementById('topicInput');
     const runBtn = document.getElementById('runBtn');
-    const chkDeepResearch = document.getElementById('chkDeepResearch');
-    const chkCitationMode = document.getElementById('chkCitationMode');
-    const chkAcademicMode = document.getElementById('chkAcademicMode');
+    const exampleChips = document.querySelectorAll('.example-chip');
     
-    // Suggestion chips
-    const suggestChips = document.querySelectorAll('.suggest-chip');
-    
-    // Steppers and connectors
-    const stepSearch = document.getElementById('step-search');
-    const stepReader = document.getElementById('step-reader');
-    const stepWriter = document.getElementById('step-writer');
-    const stepCritic = document.getElementById('step-critic');
-    
-    const connectorSearchReader = document.getElementById('connector-search-reader');
-    const connectorReaderWriter = document.getElementById('connector-reader-writer');
-    const connectorWriterCritic = document.getElementById('connector-writer-critic');
-    
-    // Overall Progress components
-    const progressRingFill = document.getElementById('progressRingFill');
-    const progressPercent = document.getElementById('progressPercent');
-    const progressTimeText = document.getElementById('progressTimeText');
-    const pipelineLiveBadge = document.getElementById('pipelineLiveBadge');
-    
-    // Statistics Cards
-    const statValSources = document.getElementById('statValSources');
-    const statValPages = document.getElementById('statValPages');
-    const statValTokens = document.getElementById('statValTokens');
-    const statValTime = document.getElementById('statValTime');
-    const statValScore = document.getElementById('statValScore');
-    const statScoreText = document.getElementById('statScoreText');
-    
-    const statTrendSources = document.getElementById('statTrendSources');
-    const statTrendPages = document.getElementById('statTrendPages');
-    const statTrendTokens = document.getElementById('statTrendTokens');
-    const statTrendTime = document.getElementById('statTrendTime');
-
-    // Report components
-    const reportStatusPill = document.getElementById('reportStatusPill');
-    const btnCopyReport = document.getElementById('btnCopyReport');
-    const btnDownloadPdf = document.getElementById('btnDownloadPdf');
-    const btnDownloadDocx = document.getElementById('btnDownloadDocx');
-    const reportWelcomePlaceholder = document.getElementById('reportWelcomePlaceholder');
-    const reportTextOutput = document.getElementById('reportTextOutput');
-    const tocCard = document.getElementById('tocCard');
-    const tocList = document.getElementById('tocList');
-    
-    // Right sidebar panels
-    const activityLiveBadge = document.getElementById('activityLiveBadge');
-    const activityTimeline = document.getElementById('activityTimeline');
-    const topSourcesList = document.getElementById('topSourcesList');
-    const criticScoreBox = document.getElementById('criticScoreBox');
-    const criticStrengthsList = document.getElementById('criticStrengthsList');
-    const criticImprovementsList = document.getElementById('criticImprovementsList');
-    
-    // History & Modals
-    const recentResearchList = document.getElementById('recentResearchList');
+    const chatContainer = document.getElementById('chatContainer');
+    const chatWelcome = document.getElementById('chatWelcome');
     const clearHistoryBtn = document.getElementById('clearHistoryBtn');
     
-    const btnToggleFullLogs = document.getElementById('btnToggleFullLogs');
-    const btnCloseLogsModal = document.getElementById('btnCloseLogsModal');
-    const logsOverlayModal = document.getElementById('logsOverlayModal');
-    const rawSearchContent = document.getElementById('rawSearchContent');
-    const rawReaderContent = document.getElementById('rawReaderContent');
+    // Raw outputs (workstation sidebar)
+    const rawWriterContent = document.getElementById('rawWriterContent');
+    const rawCriticContent = document.getElementById('rawCriticContent');
+
+    // Live activity elements (right sidebar)
+    const activityFeed = document.getElementById('activityFeed');
+    const activityEmpty = document.getElementById('activityEmpty');
+    const activityBadge = document.getElementById('activityBadge');
+
+    // Top sources elements
+    const sourcesList = document.getElementById('sourcesList');
+    const sourcesEmpty = document.getElementById('sourcesEmpty');
+    const viewAllSourcesBtn = document.getElementById('viewAllSourcesBtn');
     
-    // Theme toggle
-    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    // Step DOM element map
+    const steps = {
+        search: {
+            card: document.getElementById('flow-step-search'),
+            status: document.getElementById('flow-step-search')
+        },
+        reader: {
+            card: document.getElementById('flow-step-reader'),
+            status: document.getElementById('flow-step-reader')
+        },
+        writer: {
+            card: document.getElementById('flow-step-writer'),
+            status: document.getElementById('flow-step-writer')
+        },
+        critic: {
+            card: document.getElementById('flow-step-critic'),
+            status: document.getElementById('flow-step-critic')
+        }
+    };
 
-    // ── Local State Variables ──
-    let runStartTime = null;
-    let timerInterval = null;
-    let elapsedSeconds = 0;
-    let activeTopic = "";
+    let currentAiMsgBubbleId = null;
+    let pipelineTimerInterval = null;
+    let hasAgentRun = false;
+
+    const statusBarLeftToggleBtn = document.getElementById('statusBarLeftToggleBtn');
+    const statusBarRightToggleBtn = document.getElementById('statusBarRightToggleBtn');
     
-    let searchOutputText = "";
-    let readerOutputText = "";
-    let reportOutputText = "";
-    let criticOutputText = "";
-    
-    let uniqueSources = [];
-    let timelineEvents = [];
+    const appLayout = document.querySelector('.app-layout');
+    const pipelineStatusBar = document.getElementById('pipelineStatusBar');
+    const progressRingFill = document.getElementById('progressRingFill');
+    const progressPercentText = document.getElementById('progressPercentText');
+    const progressTimeText = document.getElementById('progressTimeText');
 
-    // ── Theme Switcher ──
-    const savedTheme = localStorage.getItem('researchmind-theme') || 'light';
-    document.documentElement.setAttribute('data-theme', savedTheme);
+    // Progress update helper
+    function updateProgress(percent) {
+        if (progressPercentText) progressPercentText.textContent = `${percent}%`;
+        if (progressRingFill) {
+            // Circumference of r=20 circle is ~125.6
+            const offset = 125.6 - (percent / 100) * 125.6;
+            progressRingFill.style.strokeDashoffset = offset;
+        }
+    }
 
-    themeToggleBtn.addEventListener('click', () => {
-        const currentTheme = document.documentElement.getAttribute('data-theme');
-        const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', nextTheme);
-        localStorage.setItem('researchmind-theme', nextTheme);
-    });
+    // Toggle Left Sidebar collapse
+    if (statusBarLeftToggleBtn && appLayout) {
+        statusBarLeftToggleBtn.addEventListener('click', () => {
+            appLayout.classList.toggle('sidebar-collapsed');
+        });
+    }
 
-    // ── Initialize History on Load ──
-    loadResearchHistory();
+    // Toggle Right Sidebar collapse
+    if (statusBarRightToggleBtn && appLayout) {
+        statusBarRightToggleBtn.addEventListener('click', () => {
+            appLayout.classList.toggle('sidebar-right-collapsed');
+        });
+    }
 
-    // ── Input Autogrow ──
+    // View all sources click listener
+    if (viewAllSourcesBtn) {
+        viewAllSourcesBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const el = activityFeed ? activityFeed.querySelector('.agent-search') : null;
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                flashHighlight(el, '#3b82f6');
+            }
+        });
+    }
+
+    // Scroll & Highlight navigation helper
+    function flashHighlight(element, color) {
+        element.style.outline = `2px dashed ${color}`;
+        element.style.outlineOffset = '4px';
+        element.style.borderRadius = '4px';
+        element.style.transition = 'outline 0.3s ease, outline-offset 0.3s ease';
+        setTimeout(() => {
+            element.style.outline = '2px dashed transparent';
+        }, 1500);
+    }
+
+    // Click navigation listeners for pipeline steps
+    if (steps.search.card) {
+        steps.search.card.addEventListener('click', () => {
+            const el = activityFeed ? activityFeed.querySelector('.agent-search') : null;
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                flashHighlight(el, '#3b82f6');
+            }
+        });
+    }
+    if (steps.reader.card) {
+        steps.reader.card.addEventListener('click', () => {
+            const el = activityFeed ? activityFeed.querySelector('.agent-reader') : null;
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                flashHighlight(el, '#06b6d4');
+            }
+        });
+    }
+    if (steps.writer.card) {
+        steps.writer.card.addEventListener('click', () => {
+            if (appLayout) appLayout.classList.remove('sidebar-collapsed');
+            if (rawWriterContent) {
+                rawWriterContent.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                flashHighlight(rawWriterContent, '#f97316');
+            }
+        });
+    }
+    if (steps.critic.card) {
+        steps.critic.card.addEventListener('click', () => {
+            if (appLayout) appLayout.classList.remove('sidebar-collapsed');
+            if (rawCriticContent) {
+                rawCriticContent.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                flashHighlight(rawCriticContent, '#a855f7');
+            }
+        });
+    }
+
+    // Live status helper (obsolete in new layout, kept to avoid reference errors)
+    function updateLiveStatus(stateClass, text) {}
+
+    // ── Auto-resize Input Textarea ──
     topicInput.addEventListener('input', autoResizeInput);
     function autoResizeInput() {
         topicInput.style.height = 'auto';
-        topicInput.style.height = (topicInput.scrollHeight) + 'px';
+        topicInput.style.height = topicInput.scrollHeight + 'px';
     }
 
-    // ── Suggestions chips ──
-    suggestChips.forEach(chip => {
+    // ── Example Chips Handler ──
+    exampleChips.forEach(chip => {
         chip.addEventListener('click', () => {
             topicInput.value = chip.getAttribute('data-topic');
             topicInput.focus();
@@ -113,158 +158,106 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // ── Checkbox Visual Styling Toggles ──
-    [chkDeepResearch, chkCitationMode, chkAcademicMode].forEach(chk => {
-        chk.addEventListener('change', () => {
-            const label = chk.closest('.mode-label');
-            if (chk.checked) {
-                label.classList.add('checked');
-            } else {
-                label.classList.remove('checked');
-            }
-        });
-    });
-
-    // ── Enter key submission ──
+    // ── Enter Key Submit ──
     topicInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            startResearchPipeline();
+            runPipeline();
         }
     });
 
-    runBtn.addEventListener('click', startResearchPipeline);
+    runBtn.addEventListener('click', runPipeline);
 
-    // ── Logs Modal Toggles ──
-    btnToggleFullLogs.addEventListener('click', () => {
-        logsOverlayModal.style.display = 'flex';
-    });
-    btnCloseLogsModal.addEventListener('click', () => {
-        logsOverlayModal.style.display = 'none';
-    });
-    logsOverlayModal.addEventListener('click', (e) => {
-        if (e.target === logsOverlayModal) {
-            logsOverlayModal.style.display = 'none';
-        }
+    // ── Clear History Handler ──
+    clearHistoryBtn.addEventListener('click', () => {
+        const messages = chatContainer.querySelectorAll('.chat-msg');
+        messages.forEach(m => m.remove());
+        chatWelcome.style.display = 'block';
     });
 
-    // ── Copy Report Content ──
-    btnCopyReport.addEventListener('click', () => {
-        if (!reportOutputText) return;
-        navigator.clipboard.writeText(reportOutputText)
-            .then(() => alert('Markdown report copied to clipboard!'))
-            .catch(err => console.error('Copy failed:', err));
-    });
-
-    // ── Mock Download Handlers ──
-    btnDownloadPdf.addEventListener('click', () => {
-        if (!reportOutputText) return;
-        downloadBlob(reportOutputText, `research_report_${Date.now()}.md`, 'text/markdown');
-        alert('Downloaded Markdown document. PDF conversion requires backend services, printing page (Ctrl+P) can save as PDF.');
-    });
-    btnDownloadDocx.addEventListener('click', () => {
-        if (!reportOutputText) return;
-        downloadBlob(reportOutputText, `research_report_${Date.now()}.txt`, 'text/plain');
-        alert('Downloaded text-only report. DOCX export complete.');
-    });
-
-    function downloadBlob(content, filename, contentType) {
-        const blob = new Blob([content], { type: contentType });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.click();
-        URL.revokeObjectURL(url);
-    }
-
-    // ── Clear History handler ──
-    clearHistoryBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (confirm('Are you sure you want to clear all research history?')) {
-            localStorage.removeItem('researchHistory');
-            loadResearchHistory();
-            resetDashboardToPlaceholder();
-        }
-    });
-
-    // ── Navigation Link resets ──
-    document.getElementById('btnNewResearch').addEventListener('click', (e) => {
-        e.preventDefault();
-        resetDashboardToPlaceholder();
-        topicInput.focus();
-    });
-    document.getElementById('sidebarNewResearch').addEventListener('click', (e) => {
-        e.preventDefault();
-        resetDashboardToPlaceholder();
-        topicInput.focus();
-    });
-
-    // ── Reset workspace to empty state ──
-    function resetDashboardToPlaceholder() {
-        topicInput.value = "";
-        autoResizeInput();
-        
-        reportOutputText = "";
-        searchOutputText = "";
-        readerOutputText = "";
-        criticOutputText = "";
-        uniqueSources = [];
-        timelineEvents = [];
-
-        reportWelcomePlaceholder.style.display = 'flex';
-        reportTextOutput.style.display = 'none';
-        reportTextOutput.innerHTML = '';
-        tocCard.style.display = 'none';
-        tocList.innerHTML = '';
-        
-        reportStatusPill.className = 'status-pill waiting';
-        reportStatusPill.textContent = 'Awaiting';
-        
-        // Clear steppers
-        [stepSearch, stepReader, stepWriter, stepCritic].forEach(el => el.classList.remove('active', 'done'));
-        [connectorSearchReader, connectorReaderWriter, connectorWriterCritic].forEach(el => el.classList.remove('filled'));
-        
-        // Progress ring
-        updateProgressRing(0);
-        progressTimeText.textContent = 'Awaiting research...';
-        
-        // Clear stats
-        statValSources.textContent = '0';
-        statValPages.textContent = '0';
-        statValTokens.textContent = '0';
-        statValTime.textContent = '0s';
-        statValScore.textContent = '--';
-        statScoreText.textContent = 'Pending';
-        
-        statTrendSources.textContent = '--';
-        statTrendPages.textContent = '--';
-        statTrendTokens.textContent = '--';
-        statTrendTime.textContent = '--';
-
-        // Right side
-        activityTimeline.innerHTML = '<li class="timeline-placeholder">Awaiting research startup...</li>';
-        topSourcesList.innerHTML = '<li class="sources-placeholder">No sources referenced yet.</li>';
-        criticScoreBox.textContent = '--';
-        criticStrengthsList.innerHTML = '<li class="eval-placeholder">Pending critique...</li>';
-        criticImprovementsList.innerHTML = '<li class="eval-placeholder">Pending critique...</li>';
-        
-        rawSearchContent.textContent = 'Awaiting pipeline start...';
-        rawReaderContent.textContent = 'Awaiting pipeline start...';
-    }
-
-    // ── Core Stream Execution ──
-    async function startResearchPipeline() {
+    // ── Main Pipeline Execution ──
+    async function runPipeline() {
         const topic = topicInput.value.trim();
         if (!topic) {
-            alert('Please enter a research topic.');
+            alert('Please enter a research topic first.');
             return;
         }
 
-        activeTopic = topic;
-        prepareDashboardForRun();
+        // 1. Prepare UI States for New Message
+        chatWelcome.style.display = 'none';
+        
+        // Append User Bubble
+        const userMsgHtml = `
+            <div class="chat-msg user">
+                <div class="msg-sender">USER</div>
+                <div class="msg-bubble">
+                    ${topic}
+                </div>
+            </div>
+        `;
+        chatContainer.insertAdjacentHTML('beforeend', userMsgHtml);
+        
+        // Append AI Placeholder Bubble
+        currentAiMsgBubbleId = `ai-msg-${Date.now()}`;
+        const aiMsgHtml = `
+            <div class="chat-msg ai" id="${currentAiMsgBubbleId}">
+                <div class="msg-sender">RESEARCHMIND</div>
+                <div class="msg-bubble">
+                    <div class="report-content-wrapper" style="display:none;">
+                        <div class="markdown-body report-text"></div>
+                        <a class="btn-download" href="#" download="research_report.md" style="margin-top:1rem; display:inline-flex;">
+                            <span>⬇ Download Report (.md)</span>
+                        </a>
+                    </div>
+                    <div class="feedback-content-wrapper" style="display:none; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1.2rem;">
+                        <div class="critic-score-box" style="font-size: 1.4rem; font-weight:700; color: var(--accent-green); margin-bottom: 0.8rem;">SCORE: --</div>
+                        <div class="markdown-body feedback-text"></div>
+                    </div>
+                    <div class="ai-loading" style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-secondary); font-size: 0.82rem; font-family: var(--font-sans);">
+                        <svg class="spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px; color: var(--accent-orange);">
+                            <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
+                            <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+                            <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
+                            <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+                        </svg>
+                        <span>Agent pipeline executing. Check the workstation on the left...</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        chatContainer.insertAdjacentHTML('beforeend', aiMsgHtml);
+        
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+        
+        // Reset topic Input
+        topicInput.value = '';
+        autoResizeInput();
+
+        setRunningState(true);
+        hasAgentRun = true;
+        if (pipelineStatusBar) pipelineStatusBar.classList.add('visible');
+        resetWorkstationAndProgress();
+        if (activityBadge) {
+            activityBadge.textContent = 'RUNNING';
+            activityBadge.className = 'activity-badge running';
+        }
+
+        // Start elapsed timer
+
+        // Start elapsed timer
+        let startTime = Date.now();
+        if (pipelineTimerInterval) clearInterval(pipelineTimerInterval);
+        if (progressTimeText) {
+            progressTimeText.innerHTML = `🕒 Running: 0s`;
+            progressTimeText.classList.add('active-run');
+        }
+        pipelineTimerInterval = setInterval(() => {
+            const elapsed = Math.round((Date.now() - startTime) / 1000);
+            if (progressTimeText) progressTimeText.innerHTML = `🕒 Running: ${elapsed}s`;
+        }, 1000);
 
         try {
+            // 2. Fetch stream from FastAPI backend
             const response = await fetch('/research/stream', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -272,9 +265,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (!response.ok) {
-                throw new Error(`Server error: ${response.status}`);
+                throw new Error(`Server returned status ${response.status}`);
             }
 
+            // 3. Process the NDJSON (Newline Delimited JSON) stream
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
@@ -285,13 +279,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 buffer += decoder.decode(value, { stream: true });
                 const lines = buffer.split('\n');
-                buffer = lines.pop();
+                buffer = lines.pop(); // Hold onto the last incomplete line segment
 
                 for (const line of lines) {
                     if (line.trim()) {
                         try {
                             const payload = JSON.parse(line);
-                            processPipelineEvent(payload);
+                            handleStreamEvent(payload);
                         } catch (err) {
                             console.error('Failed to parse line:', line, err);
                         }
@@ -299,613 +293,399 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
+            // Process any remainder in buffer
             if (buffer.trim()) {
                 try {
                     const payload = JSON.parse(buffer);
-                    processPipelineEvent(payload);
+                    handleStreamEvent(payload);
                 } catch (err) {
-                    console.error('Failed to parse buffer remainder:', buffer, err);
+                    console.error('Failed to parse trailing buffer:', buffer, err);
                 }
             }
 
         } catch (error) {
-            console.error('Research error:', error);
-            handlePipelineFailure(error.message);
-        }
-    }
-
-    // Prepare elements for a fresh research execution
-    function prepareDashboardForRun() {
-        // Stop any old timer
-        if (timerInterval) clearInterval(timerInterval);
-        
-        // Set running states
-        topicInput.disabled = true;
-        runBtn.disabled = true;
-        reportStatusPill.className = 'status-pill running';
-        reportStatusPill.textContent = 'Researching';
-        
-        // Welcome hide
-        reportWelcomePlaceholder.style.display = 'none';
-        reportTextOutput.style.display = 'block';
-        reportTextOutput.innerHTML = `
-            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4rem 0; gap: 1rem; color: var(--text-secondary);">
-                <svg class="spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:38px; height:38px; color: var(--accent-emerald); animation: spin 1.2s linear infinite;">
-                    <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
-                    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
-                    <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
-                    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
-                </svg>
-                <div style="font-weight: 600; font-size: 0.95rem;">Assembling Agents & Researching Topic...</div>
-                <div style="font-size: 0.78rem; color: var(--text-muted);">This will take approximately 30-40 seconds.</div>
-            </div>
-        `;
-        
-        // Reset steppers
-        [stepSearch, stepReader, stepWriter, stepCritic].forEach(el => el.className = 'stepper-step');
-        [connectorSearchReader, connectorReaderWriter, connectorWriterCritic].forEach(el => el.className = 'step-connector');
-
-        // Reset inputs & values
-        searchOutputText = "";
-        readerOutputText = "";
-        reportOutputText = "";
-        criticOutputText = "";
-        uniqueSources = [];
-        timelineEvents = [];
-
-        statValSources.textContent = '0';
-        statValPages.textContent = '0';
-        statValTokens.textContent = '0';
-        statValTime.textContent = '0s';
-        statValScore.textContent = '--';
-        statScoreText.textContent = 'Running';
-
-        activityTimeline.innerHTML = '';
-        topSourcesList.innerHTML = '<li class="sources-placeholder">Retrieving references...</li>';
-        criticScoreBox.textContent = '--';
-        criticStrengthsList.innerHTML = '<li class="eval-placeholder">Critique pending...</li>';
-        criticImprovementsList.innerHTML = '<li class="eval-placeholder">Critique pending...</li>';
-
-        rawSearchContent.textContent = 'Running search queries...';
-        rawReaderContent.textContent = 'Waiting for reader node...';
-
-        // Trigger time tracking
-        elapsedSeconds = 0;
-        runStartTime = Date.now();
-        progressTimeText.textContent = 'Processing...';
-        
-        timerInterval = setInterval(() => {
-            elapsedSeconds = Math.floor((Date.now() - runStartTime) / 1000);
-            statValTime.textContent = `${elapsedSeconds}s`;
-            progressTimeText.textContent = `Researching: ${elapsedSeconds}s`;
-        }, 1000);
-
-        updateProgressRing(5);
-    }
-
-    // Handle pipeline failure gracefully
-    function handlePipelineFailure(message) {
-        if (timerInterval) clearInterval(timerInterval);
-        
-        topicInput.disabled = false;
-        runBtn.disabled = false;
-        
-        reportStatusPill.className = 'status-pill waiting';
-        reportStatusPill.textContent = 'Failed';
-        
-        reportTextOutput.innerHTML = `
-            <div style="border: 1px solid rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.05); color: #ef4444; padding: 2rem; border-radius: var(--radius-lg); margin-top: 2rem;">
-                <h3 style="margin-bottom: 0.5rem; font-weight: 700;">Research Execution Interrupted</h3>
-                <p style="font-size: 0.88rem;">${message}</p>
-            </div>
-        `;
-        
-        // Find current active step and mark it failed (visually done in css if we want, or just reset)
-        progressTimeText.textContent = 'Failed';
-        addTimelineLog('SYSTEM', `Pipeline halted due to error: ${message}`, 'active');
-    }
-
-    // ── SVG Circular Progress Helper ──
-    function updateProgressRing(percent) {
-        const circle = progressRingFill;
-        const radius = circle.r.baseVal.value;
-        const circumference = 2 * Math.PI * radius; // 213.63
-        
-        circle.style.strokeDasharray = `${circumference} ${circumference}`;
-        const offset = circumference - (percent / 100) * circumference;
-        circle.style.strokeDashoffset = offset;
-        
-        progressPercent.textContent = `${percent}%`;
-    }
-
-    // ── Add formatted log entry to activity monitor timeline ──
-    function addTimelineLog(agentName, text, status = 'done') {
-        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-        
-        const timelineItem = document.createElement('li');
-        timelineItem.className = `timeline-item ${status}`;
-        timelineItem.innerHTML = `
-            <div class="timeline-bullet"></div>
-            <div class="timeline-item-meta">
-                <span class="timeline-time">${timeStr}</span>
-                <span class="timeline-agent">${agentName}</span>
-            </div>
-            <div class="timeline-log">${text}</div>
-        `;
-        
-        activityTimeline.appendChild(timelineItem);
-        // Scroll timeline container to bottom
-        const container = activityTimeline.closest('.timeline-container');
-        container.scrollTop = container.scrollHeight;
-        
-        timelineEvents.push({ time: timeStr, agent: agentName, log: text, status });
-    }
-
-    // ── Parse links from Tavily search results to populate Top Sources ──
-    function parseAndRenderSources(searchData) {
-        // Look for markdown links: [title](url) or absolute URLs
-        const urlRegex = /(https?:\/\/[^\s\)\"\'\]]+)/g;
-        const matches = searchData.match(urlRegex) || [];
-        
-        const domains = [];
-        const seenDomains = new Set();
-        
-        matches.forEach(urlStr => {
-            try {
-                // Strip trailing dots, parentheses, brackets, or commas
-                const cleanUrl = urlStr.replace(/[.,\)]+$/, '');
-                const urlObj = new URL(cleanUrl);
-                const domain = urlObj.hostname.replace('www.', '');
-                
-                if (!seenDomains.has(domain) && domain.includes('.')) {
-                    seenDomains.add(domain);
-                    domains.push({
-                        domain: domain,
-                        url: cleanUrl
-                    });
+            console.error('Pipeline error:', error);
+            alert(`An error occurred while running the pipeline: ${error.message}`);
+            // Reset active running steps to failed if error
+            for (const key in steps) {
+                if (steps[key].card.classList.contains('active')) {
+                    updateStepState(key, 'failed');
                 }
-            } catch (e) {
-                // Ignore invalid URLs
             }
-        });
-        
-        uniqueSources = domains.slice(0, 5); // display top 5
-        statValSources.textContent = domains.length;
-        
-        if (uniqueSources.length === 0) {
-            topSourcesList.innerHTML = '<li class="sources-placeholder">No external sources cited.</li>';
-            return;
-        }
-
-        topSourcesList.innerHTML = '';
-        uniqueSources.forEach((src, idx) => {
-            const item = document.createElement('li');
-            item.className = 'source-item-card';
-            item.innerHTML = `
-                <div class="source-item-left">
-                    <img class="source-favicon" src="https://www.google.com/s2/favicons?domain=${src.domain}&sz=32" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22><circle cx=%2212%22 cy=%2212%22 r=%2210%22/></svg>'" alt="Favicon">
-                    <div class="source-details">
-                        <span class="source-domain">${src.domain}</span>
-                        <span class="source-url-sub">${src.url.substring(0, 32)}...</span>
-                    </div>
-                </div>
-                <a class="source-link-icon-btn" href="${src.url}" target="_blank" title="Visit source website">
-                    <svg class="source-link-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-                    </svg>
-                </a>
-            `;
-            topSourcesList.appendChild(item);
-        });
-    }
-
-    // ── Table of Contents generator ──
-    function buildTableOfContents() {
-        const headers = reportTextOutput.querySelectorAll('h2, h3');
-        if (headers.length === 0) {
-            tocCard.style.display = 'none';
-            return;
-        }
-
-        tocCard.style.display = 'block';
-        tocList.innerHTML = '';
-        
-        headers.forEach((header, index) => {
-            // Generate a unique ID for scrolling anchor if missing
-            const headerId = `heading-${index}`;
-            header.id = headerId;
-            
-            const link = document.createElement('a');
-            link.className = `toc-link-item ${header.tagName.toLowerCase() === 'h3' ? 'toc-h3' : 'toc-h2'}`;
-            link.textContent = header.textContent.replace(/^[\d.\s]+/, ''); // remove numbering if any
-            link.href = `#${headerId}`;
-            
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                header.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            });
-            
-            const li = document.createElement('li');
-            li.appendChild(link);
-            tocList.appendChild(li);
-        });
-    }
-
-    // ── Event Router for FastAPI Streams ──
-    function processPipelineEvent(payload) {
-        const { event, data } = payload;
-        
-        switch (event) {
-            // Step 1 — Search Start & Done
-            case 'search_start':
-                stepSearch.classList.add('active');
-                updateProgressRing(10);
-                addTimelineLog('Search Agent', 'Querying index and discovering web sources...', 'active');
-                break;
-            case 'search_done':
-                stepSearch.classList.remove('active');
-                stepSearch.classList.add('done');
-                connectorSearchReader.classList.add('filled');
-                updateProgressRing(30);
-                
-                searchOutputText = data;
-                rawSearchContent.textContent = data;
-                
-                // Parse links out to sources list
-                parseAndRenderSources(data);
-                
-                addTimelineLog('Search Agent', `Found ${statValSources.textContent || 0} relevant web sources.`, 'done');
-                break;
-            case 'search_failed':
-                stepSearch.classList.remove('active');
-                rawSearchContent.textContent = data;
-                handlePipelineFailure(`Search Agent failed: ${data}`);
-                break;
-
-            // Step 2 — Reader Start & Done
-            case 'reader_start':
-                stepReader.classList.add('active');
-                updateProgressRing(40);
-                rawReaderContent.textContent = 'Accessing primary source URLs...';
-                addTimelineLog('Reader Agent', 'Scraping primary source for in-depth contents...', 'active');
-                break;
-            case 'reader_done':
-                stepReader.classList.remove('active');
-                stepReader.classList.add('done');
-                connectorReaderWriter.classList.add('filled');
-                updateProgressRing(60);
-                
-                readerOutputText = data;
-                rawReaderContent.textContent = data;
-                
-                // Pages scraped statistics
-                statValPages.textContent = '1'; // single target URL scrape success
-                
-                addTimelineLog('Reader Agent', 'Finished page extraction & source cleaning.', 'done');
-                break;
-            case 'reader_failed':
-                stepReader.classList.remove('active');
-                rawReaderContent.textContent = data;
-                handlePipelineFailure(`Reader Agent failed: ${data}`);
-                break;
-
-            // Step 3 — Writer Start & Done
-            case 'writer_start':
-                stepWriter.classList.add('active');
-                updateProgressRing(70);
-                addTimelineLog('Writer Agent', 'Structuring research notes and drafting final report...', 'active');
-                break;
-            case 'writer_done':
-                stepWriter.classList.remove('active');
-                stepWriter.classList.add('done');
-                connectorWriterCritic.classList.add('filled');
-                updateProgressRing(85);
-                
-                reportOutputText = data;
-                reportTextOutput.innerHTML = marked.parse(data);
-                
-                // Calculate word metrics to set approximate tokens count
-                const wordCount = data.split(/\s+/).length;
-                const approxTokens = Math.round(wordCount * 1.35);
-                statValTokens.textContent = approxTokens > 1000 ? `${(approxTokens/1000).toFixed(1)}K` : approxTokens;
-                
-                // Render Table of Contents
-                buildTableOfContents();
-                
-                addTimelineLog('Writer Agent', 'Markdown research report compilation completed.', 'done');
-                break;
-            case 'writer_failed':
-                stepWriter.classList.remove('active');
-                handlePipelineFailure(`Writer Agent failed: ${data}`);
-                break;
-
-            // Step 4 — Critic Start & Done
-            case 'critic_start':
-                stepCritic.classList.add('active');
-                updateProgressRing(90);
-                addTimelineLog('Critic Agent', 'Performing editorial quality check and scorecard mapping...', 'active');
-                break;
-            case 'critic_done':
-                stepCritic.classList.remove('active');
-                stepCritic.classList.add('done');
-                updateProgressRing(100);
-                
-                criticOutputText = data;
-                
-                // Timer finish
-                if (timerInterval) clearInterval(timerInterval);
-                const finalDuration = Math.floor((Date.now() - runStartTime) / 1000);
-                statValTime.textContent = `${finalDuration}s`;
-                progressTimeText.textContent = `Completed in ${finalDuration}s`;
-                
-                // Parse quality score
-                const scoreMatch = data.match(/([0-9.]+\s*\/10)/i) || data.match(/Score:\s*([0-9.]+)/i);
-                let numericScore = "8.7/10"; // robust fallback
-                if (scoreMatch) {
-                    numericScore = scoreMatch[1].includes('/10') ? scoreMatch[1].trim() : `${scoreMatch[1].trim()}/10`;
-                }
-                
-                statValScore.textContent = numericScore;
-                criticScoreBox.textContent = numericScore;
-                statScoreText.textContent = parseFloat(numericScore) >= 8 ? 'High Quality' : 'Standard Quality';
-                
-                // Parse strengths & improvements
-                parseCriticFeedbackLists(data);
-                
-                // Reset controls
-                topicInput.disabled = false;
-                runBtn.disabled = false;
-                reportStatusPill.className = 'status-pill completed';
-                reportStatusPill.textContent = 'Completed';
-                
-                addTimelineLog('Critic Agent', `Evaluation completed. Score: ${numericScore}`, 'done');
-                
-                // Save run state into localStorage history database
-                saveResearchToDatabase(numericScore, finalDuration);
-                break;
-            case 'critic_failed':
-                stepCritic.classList.remove('active');
-                handlePipelineFailure(`Critic Agent failed: ${data}`);
-                break;
-        }
-    }
-
-    // ── Parse bullet lists out of Critic output ──
-    function parseCriticFeedbackLists(criticText) {
-        const lines = criticText.split('\n');
-        
-        let strengths = [];
-        let improvements = [];
-        let currentSection = ""; // "strengths" or "improvements"
-        
-        lines.forEach(line => {
-            const cleanLine = line.trim().toLowerCase();
-            if (cleanLine.includes('strength') || cleanLine.includes('pros') || cleanLine.includes('positive')) {
-                currentSection = "strengths";
-                return;
-            }
-            if (cleanLine.includes('improve') || cleanLine.includes('weakness') || cleanLine.includes('cons') || cleanLine.includes('negative')) {
-                currentSection = "improvements";
-                return;
-            }
-            
-            // Look for bullet items
-            if (line.trim().startsWith('-') || line.trim().startsWith('*') || /^\d+\./.test(line.trim())) {
-                const bulletText = line.replace(/^[-*\d.\s]+/, '').trim();
-                if (bulletText) {
-                    if (currentSection === "strengths") {
-                        strengths.push(bulletText);
-                    } else if (currentSection === "improvements") {
-                        improvements.push(bulletText);
+            updateLiveStatus('failed', 'Pipeline error occurred');
+            // Remove the loading indicator if we failed
+            if (currentAiMsgBubbleId) {
+                const aiBubble = document.getElementById(currentAiMsgBubbleId);
+                if (aiBubble) {
+                    const loadingEl = aiBubble.querySelector('.ai-loading');
+                    if (loadingEl) {
+                        loadingEl.innerHTML = `<span style="color:#ff5a1a;">⚠️ Pipeline execution failed: ${error.message}</span>`;
                     }
                 }
             }
-        });
-        
-        // Fallback placeholders if none parsed
-        if (strengths.length === 0) {
-            strengths = ["Structured layout matches scientific research standards", "Accurate citation index for key statistics", "Neutral and balanced editorial tone"];
-        }
-        if (improvements.length === 0) {
-            improvements = ["Integrate further localized research case studies", "Deepen technical analysis within executive summaries", "Include supplementary reference charts"];
-        }
-        
-        criticStrengthsList.innerHTML = '';
-        strengths.slice(0, 3).forEach(str => {
-            const li = document.createElement('li');
-            li.className = 'eval-bullet-item plus';
-            li.textContent = str;
-            criticStrengthsList.appendChild(li);
-        });
-        
-        criticImprovementsList.innerHTML = '';
-        improvements.slice(0, 3).forEach(imp => {
-            const li = document.createElement('li');
-            li.className = 'eval-bullet-item minus';
-            li.textContent = imp;
-            criticImprovementsList.appendChild(li);
-        });
-    }
-
-    // ── Local Database Persistence (localStorage) ──
-    function saveResearchToDatabase(score, duration) {
-        const history = JSON.parse(localStorage.getItem('researchHistory')) || [];
-        
-        const newRun = {
-            id: `run-${Date.now()}`,
-            topic: activeTopic,
-            timestamp: new Date().toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) + ', ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            stats: {
-                sources: statValSources.textContent,
-                pages: statValPages.textContent,
-                tokens: statValTokens.textContent,
-                time: `${duration}s`,
-                score: score
-            },
-            report: reportOutputText,
-            searchLogs: searchOutputText,
-            readerLogs: readerOutputText,
-            sourcesList: uniqueSources,
-            timeline: timelineEvents,
-            criticStrengths: Array.from(criticStrengthsList.children).map(li => li.textContent),
-            criticImprovements: Array.from(criticImprovementsList.children).map(li => li.textContent)
-        };
-        
-        // Avoid duplicate topics in list; remove previous if identical query
-        const filteredHistory = history.filter(run => run.topic.toLowerCase() !== activeTopic.toLowerCase());
-        filteredHistory.unshift(newRun);
-        
-        localStorage.setItem('researchHistory', JSON.stringify(filteredHistory.slice(0, 10))); // keep top 10
-        loadResearchHistory();
-    }
-
-    function loadResearchHistory() {
-        const history = JSON.parse(localStorage.getItem('researchHistory')) || [];
-        
-        if (history.length === 0) {
-            recentResearchList.innerHTML = '<li class="recent-placeholder">No research history yet.</li>';
-            return;
-        }
-
-        recentResearchList.innerHTML = '';
-        history.forEach(run => {
-            const li = document.createElement('li');
-            li.className = 'recent-item';
-            li.innerHTML = `
-                <div class="recent-item-left">
-                    <span class="recent-item-text">${run.topic}</span>
-                    <span class="recent-item-sub">${run.timestamp}</span>
-                </div>
-                <div class="recent-bullet"></div>
-            `;
+        } finally {
+            setRunningState(false);
+            if (pipelineTimerInterval) {
+                clearInterval(pipelineTimerInterval);
+                pipelineTimerInterval = null;
+            }
+            if (progressTimeText) progressTimeText.classList.remove('active-run');
             
-            li.addEventListener('click', () => {
-                loadResearchRun(run);
-            });
-            recentResearchList.appendChild(li);
-        });
+            if (activityBadge) {
+                const hasFailed = Array.from(Object.values(steps)).some(step => step.card.classList.contains('failed'));
+                if (hasFailed) {
+                    activityBadge.textContent = 'FAILED';
+                    activityBadge.className = 'activity-badge';
+                    activityBadge.style.color = '#ff5a1a';
+                    activityBadge.style.borderColor = 'rgba(255, 90, 26, 0.3)';
+                    activityBadge.style.background = 'rgba(255, 90, 26, 0.12)';
+                } else {
+                    activityBadge.textContent = 'DONE';
+                    activityBadge.className = 'activity-badge done';
+                    activityBadge.style.color = '';
+                    activityBadge.style.borderColor = '';
+                    activityBadge.style.background = '';
+                }
+            }
+        }
     }
 
-    // Restore workspace metrics and logs when clicking historical items
-    function loadResearchRun(run) {
-        if (timerInterval) clearInterval(timerInterval);
-        
-        topicInput.value = run.topic;
-        autoResizeInput();
-        
-        activeTopic = run.topic;
-        reportOutputText = run.report;
-        searchOutputText = run.searchLogs;
-        readerOutputText = run.readerLogs;
-        uniqueSources = run.sourcesList || [];
-        timelineEvents = run.timeline || [];
-
-        // Set static fields
-        reportWelcomePlaceholder.style.display = 'none';
-        reportTextOutput.style.display = 'block';
-        reportTextOutput.innerHTML = marked.parse(run.report);
-        
-        reportStatusPill.className = 'status-pill completed';
-        reportStatusPill.textContent = 'Completed';
-        
-        // Progress ring full
-        [stepSearch, stepReader, stepWriter, stepCritic].forEach(el => {
-            el.classList.remove('active');
-            el.classList.add('done');
-        });
-        [connectorSearchReader, connectorReaderWriter, connectorWriterCritic].forEach(el => el.classList.add('filled'));
-        
-        updateProgressRing(100);
-        progressTimeText.textContent = `Completed in ${run.stats.time}`;
-        
-        // Set stats
-        statValSources.textContent = run.stats.sources;
-        statValPages.textContent = run.stats.pages;
-        statValTokens.textContent = run.stats.tokens;
-        statValTime.textContent = run.stats.time;
-        statValScore.textContent = run.stats.score;
-        statScoreText.textContent = parseFloat(run.stats.score) >= 8 ? 'High Quality' : 'Standard Quality';
-        
-        // Render TOC
-        buildTableOfContents();
-
-        // Render timeline
-        activityTimeline.innerHTML = '';
-        if (run.timeline && run.timeline.length > 0) {
-            run.timeline.forEach(event => {
-                const item = document.createElement('li');
-                item.className = `timeline-item ${event.status || 'done'}`;
-                item.innerHTML = `
-                    <div class="timeline-bullet"></div>
-                    <div class="timeline-item-meta">
-                        <span class="timeline-time">${event.time}</span>
-                        <span class="timeline-agent">${event.agent}</span>
-                    </div>
-                    <div class="timeline-log">${event.log}</div>
-                `;
-                activityTimeline.appendChild(item);
-            });
+    // ── Helper: Set Running UI state ──
+    function setRunningState(running) {
+        topicInput.disabled = running;
+        runBtn.disabled = running;
+        if (running) {
+            runBtn.innerHTML = `
+                <svg class="spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="2" x2="12" y2="6"/>
+                    <line x1="12" y1="18" x2="12" y2="22"/>
+                    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
+                    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+                    <line x1="2" y1="12" x2="6" y2="12"/>
+                    <line x1="18" y1="12" x2="22" y2="12"/>
+                    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
+                    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+                </svg>
+            `;
         } else {
-            activityTimeline.innerHTML = '<li class="timeline-placeholder">No activity logs saved for this run.</li>';
+            runBtn.innerHTML = `
+                <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="19" x2="12" y2="5"/>
+                    <polyline points="5 12 12 5 19 12"/>
+                </svg>
+            `;
+        }
+    }
+
+    // ── Helper: Reset Workstation and Steps Progress ──
+    function resetWorkstationAndProgress() {
+        Object.keys(steps).forEach(key => {
+            updateStepState(key, 'waiting');
+        });
+        if (rawWriterContent) rawWriterContent.textContent = 'Awaiting pipeline start...';
+        if (rawCriticContent) rawCriticContent.textContent = 'Awaiting pipeline start...';
+        
+        // Hide status bar initially if agent hasn't run yet
+        if (!hasAgentRun && pipelineStatusBar) {
+            pipelineStatusBar.classList.remove('visible');
+        }
+        updateProgress(0);
+
+        if (pipelineTimerInterval) {
+            clearInterval(pipelineTimerInterval);
+            pipelineTimerInterval = null;
+        }
+        if (progressTimeText) {
+            progressTimeText.innerHTML = `🕒 Ready`;
+            progressTimeText.classList.remove('active-run');
+        }
+        
+        // Reset Activity Feed
+        if (activityFeed) {
+            const entries = activityFeed.querySelectorAll('.activity-entry');
+            entries.forEach(entry => entry.remove());
+            if (activityEmpty) activityEmpty.style.display = 'flex';
+        }
+        if (activityBadge) {
+            activityBadge.textContent = 'IDLE';
+            activityBadge.className = 'activity-badge';
+            activityBadge.style.color = '';
+            activityBadge.style.borderColor = '';
+            activityBadge.style.background = '';
         }
 
-        // Render sources
-        if (run.sourcesList && run.sourcesList.length > 0) {
-            topSourcesList.innerHTML = '';
-            run.sourcesList.forEach(src => {
-                const item = document.createElement('li');
-                item.className = 'source-item-card';
-                item.innerHTML = `
-                    <div class="source-item-left">
-                        <img class="source-favicon" src="https://www.google.com/s2/favicons?domain=${src.domain}&sz=32" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22><circle cx=%2212%22 cy=%2212%22 r=%2210%22/></svg>'" alt="Favicon">
-                        <div class="source-details">
-                            <span class="source-domain">${src.domain}</span>
-                            <span class="source-url-sub">${src.url.substring(0, 32)}...</span>
+        // Reset Top Sources
+        if (sourcesList) {
+            sourcesList.querySelectorAll('.source-item').forEach(el => el.remove());
+            if (sourcesEmpty) sourcesEmpty.style.display = 'block';
+        }
+    }
+
+    // ── Helper: Update Step Card Visuals ──
+    function updateStepState(stepKey, state) {
+        const step = steps[stepKey];
+        if (!step) return;
+
+        step.card.classList.remove('active', 'done');
+
+        if (state === 'running') {
+            step.card.classList.add('active');
+        } else if (state === 'done') {
+            step.card.classList.add('done');
+        }
+    }
+
+    // ── Process Stream Events ──
+    function handleStreamEvent(eventObj) {
+        const { event, data } = eventObj;
+        
+        // Find current AI bubble DOM elements
+        const aiBubble = currentAiMsgBubbleId ? document.getElementById(currentAiMsgBubbleId) : null;
+        
+        switch (event) {
+            // Timeline log from agent
+            case 'timeline_log':
+                if (activityEmpty) activityEmpty.style.display = 'none';
+                
+                const logTime = eventObj.time || '';
+                const logAgent = eventObj.agent || 'System';
+                const logMsg = eventObj.message || '';
+                
+                // Map agent to class name
+                let agentClass = 'agent-system';
+                if (logAgent.toLowerCase().includes('search')) {
+                    agentClass = 'agent-search';
+                } else if (logAgent.toLowerCase().includes('reader') || logAgent.toLowerCase().includes('scrape')) {
+                    agentClass = 'agent-reader';
+                } else if (logAgent.toLowerCase().includes('writer')) {
+                    agentClass = 'agent-writer';
+                } else if (logAgent.toLowerCase().includes('critic')) {
+                    agentClass = 'agent-critic';
+                }
+                
+                const entryHtml = `
+                    <div class="activity-entry ${agentClass}">
+                        <div class="activity-entry-header">
+                            <span class="activity-entry-dot"></span>
+                            <span class="activity-entry-agent">${logAgent}</span>
+                            <span class="activity-entry-time">${logTime}</span>
                         </div>
+                        <div class="activity-entry-msg">${logMsg}</div>
                     </div>
-                    <a class="source-link-icon-btn" href="${src.url}" target="_blank">
-                        <svg class="source-link-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-                        </svg>
-                    </a>
                 `;
-                topSourcesList.appendChild(item);
-            });
-        } else {
-            topSourcesList.innerHTML = '<li class="sources-placeholder">No cited sources saved for this run.</li>';
-        }
+                
+                if (activityFeed) {
+                    activityFeed.insertAdjacentHTML('beforeend', entryHtml);
+                    activityFeed.scrollTop = activityFeed.scrollHeight;
+                }
+                break;
 
-        // Render Critic scorecard
-        criticScoreBox.textContent = run.stats.score;
-        
-        criticStrengthsList.innerHTML = '';
-        if (run.criticStrengths && run.criticStrengths.length > 0) {
-            run.criticStrengths.forEach(str => {
-                const li = document.createElement('li');
-                li.className = 'eval-bullet-item plus';
-                li.textContent = str;
-                criticStrengthsList.appendChild(li);
-            });
-        } else {
-            criticStrengthsList.innerHTML = '<li class="eval-placeholder">No strengths recorded.</li>';
-        }
+            // Search Step
+            case 'search_start':
+                updateStepState('search', 'running');
+                updateProgress(12);
+                break;
+            case 'search_done':
+                updateStepState('search', 'done');
+                updateProgress(25);
 
-        criticImprovementsList.innerHTML = '';
-        if (run.criticImprovements && run.criticImprovements.length > 0) {
-            run.criticImprovements.forEach(imp => {
-                const li = document.createElement('li');
-                li.className = 'eval-bullet-item minus';
-                li.textContent = imp;
-                criticImprovementsList.appendChild(li);
-            });
-        } else {
-            criticImprovementsList.innerHTML = '<li class="eval-placeholder">No improvement areas recorded.</li>';
-        }
+                // Populate Top Sources list
+                if (eventObj.sources && eventObj.sources.length > 0) {
+                    if (sourcesEmpty) sourcesEmpty.style.display = 'none';
+                    if (sourcesList) {
+                        sourcesList.querySelectorAll('.source-item').forEach(el => el.remove());
+                        
+                        const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        
+                        eventObj.sources.slice(0, 5).forEach((source, index) => {
+                            const rank = index + 1;
+                            const domain = source.domain || 'unknown.com';
+                            const url = source.url || '#';
+                            const displayUrl = source.url ? (source.url.length > 30 ? source.url.substring(0, 30) + '...' : source.url) : 'N/A';
+                            
+                            const itemHtml = `
+                                <div class="source-item">
+                                    <div class="source-rank-badge">${rank}</div>
+                                    <div class="source-item-details">
+                                        <div class="source-item-domain">${domain}</div>
+                                        <div class="source-item-subtext">${displayUrl} | ${timeString}</div>
+                                    </div>
+                                    <a href="${url}" target="_blank" class="source-item-link-btn" title="Open source link">
+                                        <svg class="source-item-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                                            <polyline points="15 3 21 3 21 9"/>
+                                            <line x1="10" y1="14" x2="21" y2="3"/>
+                                        </svg>
+                                    </a>
+                                </div>
+                            `;
+                            sourcesList.insertAdjacentHTML('beforeend', itemHtml);
+                        });
+                    }
+                }
+                break;
+            case 'search_failed':
+                updateStepState('search', 'failed');
+                break;
 
-        // Workstation overlay content
-        rawSearchContent.textContent = run.searchLogs || "No logs captured.";
-        rawReaderContent.textContent = run.readerLogs || "No logs captured.";
-        
-        alert(`Loaded past research session: "${run.topic}"`);
+            // Reader Step
+            case 'reader_start':
+                updateStepState('reader', 'running');
+                updateProgress(38);
+                break;
+            case 'reader_done':
+                updateStepState('reader', 'done');
+                updateProgress(50);
+                break;
+            case 'reader_failed':
+                updateStepState('reader', 'failed');
+                break;
+
+            // Writer Step
+            case 'writer_start':
+                updateStepState('writer', 'running');
+                updateProgress(62);
+                if (rawWriterContent) {
+                    rawWriterContent.textContent = 'Generating structured research report...';
+                    rawWriterContent.classList.add('active-log');
+                }
+                break;
+            case 'writer_done':
+                updateStepState('writer', 'done');
+                updateProgress(75);
+                if (rawWriterContent) {
+                    rawWriterContent.textContent = data;
+                    rawWriterContent.classList.remove('active-log');
+                }
+                if (aiBubble) {
+                    // Hide loading indicator
+                    const loadingEl = aiBubble.querySelector('.ai-loading');
+                    if (loadingEl) loadingEl.style.display = 'none';
+
+                    // Show report wrapper
+                    const reportWrapper = aiBubble.querySelector('.report-content-wrapper');
+                    const reportText = aiBubble.querySelector('.report-text');
+                    const downloadBtn = aiBubble.querySelector('.btn-download');
+                    
+                    if (reportWrapper && reportText) {
+                        reportWrapper.style.display = 'block';
+                        reportText.innerHTML = marked.parse(data);
+                        
+                        // Set up download blob
+                        const blob = new Blob([data], { type: 'text/markdown' });
+                        const url = URL.createObjectURL(blob);
+                        downloadBtn.href = url;
+                        downloadBtn.download = `research_report_${Date.now()}.md`;
+                    }
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }
+                break;
+            case 'writer_failed':
+                updateStepState('writer', 'failed');
+                if (rawWriterContent) {
+                    rawWriterContent.textContent = `Error: ${data}`;
+                    rawWriterContent.classList.remove('active-log');
+                }
+                if (aiBubble) {
+                    const loadingEl = aiBubble.querySelector('.ai-loading');
+                    if (loadingEl) loadingEl.style.display = 'none';
+
+                    const reportWrapper = aiBubble.querySelector('.report-content-wrapper');
+                    const reportText = aiBubble.querySelector('.report-text');
+                    if (reportWrapper && reportText) {
+                        reportWrapper.style.display = 'block';
+                        reportText.innerHTML = `<span style="color:#ff5a1a;">Report generation failed: ${data}</span>`;
+                    }
+                }
+                break;
+
+            // Critic Step
+            case 'critic_start':
+                updateStepState('critic', 'running');
+                updateProgress(88);
+                if (rawCriticContent) {
+                    rawCriticContent.textContent = 'Evaluating research report quality...';
+                    rawCriticContent.classList.add('active-log');
+                }
+                break;
+            case 'critic_done':
+                updateStepState('critic', 'done');
+                updateProgress(100);
+                if (rawCriticContent) {
+                    rawCriticContent.textContent = data;
+                    rawCriticContent.classList.remove('active-log');
+                }
+                if (aiBubble) {
+                    const feedbackWrapper = aiBubble.querySelector('.feedback-content-wrapper');
+                    const feedbackText = aiBubble.querySelector('.feedback-text');
+                    const criticScoreBox = aiBubble.querySelector('.critic-score-box');
+
+                    if (feedbackWrapper && feedbackText) {
+                        feedbackWrapper.style.display = 'block';
+                        feedbackText.innerHTML = marked.parse(data);
+
+                        // Extract score if possible (e.g. Score: 8/10, or just 8/10)
+                        const scoreMatch = data.match(/([0-9.]+\/10)/i) || data.match(/Score:\s*([0-9.]+)/i);
+                        if (scoreMatch) {
+                            criticScoreBox.textContent = `SCORE: ${scoreMatch[1].includes('/10') ? scoreMatch[1] : scoreMatch[1] + '/10'}`;
+                        } else {
+                            criticScoreBox.textContent = 'EVALUATED';
+                        }
+                    }
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }
+                break;
+            case 'critic_failed':
+                updateStepState('critic', 'failed');
+                if (rawCriticContent) {
+                    rawCriticContent.textContent = `Error: ${data}`;
+                    rawCriticContent.classList.remove('active-log');
+                }
+                if (aiBubble) {
+                    const feedbackWrapper = aiBubble.querySelector('.feedback-content-wrapper');
+                    const feedbackText = aiBubble.querySelector('.feedback-text');
+                    if (feedbackWrapper && feedbackText) {
+                        feedbackWrapper.style.display = 'block';
+                        feedbackText.innerHTML = `<span style="color:#ff5a1a;">Evaluation failed: ${data}</span>`;
+                    }
+                }
+                break;
+                
+            case 'complete':
+                if (pipelineTimerInterval) {
+                    clearInterval(pipelineTimerInterval);
+                    pipelineTimerInterval = null;
+                }
+                if (progressTimeText) {
+                    progressTimeText.classList.remove('active-run');
+                    const elapsed = eventObj.metrics ? eventObj.metrics.elapsed_time : 0;
+                    progressTimeText.innerHTML = `🕒 Completed in ${elapsed} seconds`;
+                }
+                updateProgress(100);
+                console.log('Research pipeline finished successfully!', eventObj.state);
+                break;
+        }
     }
+
+    // ── Dynamic Welcome Message Picker ──
+    const welcomeMessages = [
+        "\"The important thing is not to stop questioning. Curiosity has its own reason for existence.\" — Albert Einstein",
+        "\"Research is to see what everybody else has seen, and to think what nobody else has thought.\" — Albert Szent-Györgyi",
+        "\"Somewhere, something incredible is waiting to be known.\" — Carl Sagan",
+        "\"What we know is a drop, what we don't know is an ocean.\" — Isaac Newton",
+        "\"Curiosity is the wick in the candle of learning.\" — William Arthur Ward",
+        "Deep research, automated synthesis. Unlocking insights at the frontiers of human knowledge."
+    ];
+
+    const welcomeMessageEl = document.getElementById('welcomeMessage');
+    if (welcomeMessageEl) {
+        const randomIndex = Math.floor(Math.random() * welcomeMessages.length);
+        welcomeMessageEl.textContent = welcomeMessages[randomIndex];
+    }
+
+    // ── Interactive Cursor Spotlight Effect ──
+    document.addEventListener('mousemove', (e) => {
+        document.documentElement.style.setProperty('--mouse-x', `${e.clientX}px`);
+        document.documentElement.style.setProperty('--mouse-y', `${e.clientY}px`);
+    });
 });
