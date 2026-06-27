@@ -29,11 +29,20 @@ def scrape_url(url: str) -> str:
     try:
         # Sanitize URL by removing whitespace, newlines, and trailing/leading delimiters
         url = url.strip().replace("\n", "").replace("\r", "").strip("()[]\"'")
-        resp = requests.get(url, timeout=8, headers={"User-Agent": "Mozilla/5.0"})
+        resp = requests.get(
+            url, 
+            timeout=8, 
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+        )
+        if resp.status_code != 200:
+            return f"Could not scrape URL: HTTP {resp.status_code} Error"
         soup = BeautifulSoup(resp.text, "html.parser")
-        for tag in soup(["script", "style", "nav", "footer"]):
+        for tag in soup(["script", "style", "nav", "footer", "header", "aside"]):
             tag.decompose()
-        return soup.get_text(separator=" ", strip=True)[:3000]
+        text = soup.get_text(separator=" ", strip=True)
+        if not text:
+            return "Could not scrape URL: Webpage returned empty content."
+        return text[:3000]
     except Exception as e:
         return f"Could not scrape URL: {str(e)}"
 
