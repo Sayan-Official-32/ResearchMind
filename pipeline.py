@@ -1,3 +1,6 @@
+import os
+os.environ["HTTPX_NO_HTTP2"] = "1"
+
 import time
 import datetime
 from typing import Generator
@@ -186,19 +189,38 @@ def run_research_pipeline_stream(topic: str) -> Generator[dict, None, None]:
     try:
         current_date = datetime.datetime.now().strftime("%B %Y")
         search_agent = build_search_agent()
-        search_result = search_agent.invoke({
-            "messages": [("user", f"Find recent, reliable and detailed information (as of {current_date}) about: {topic}")]
-        })
+        all_search_messages = []
         
-        # Calculate tokens
-        for m in search_result['messages']:
-            if m.content:
-                total_tokens += _estimate_tokens(_extract_content_text(m.content))
+        for chunk in search_agent.stream({
+            "messages": [("user", f"Find recent, reliable and detailed information (as of {current_date}) about: {topic}")]
+        }, stream_mode="updates"):
+            for node, val in chunk.items():
+                if "messages" in val:
+                    for m in val["messages"]:
+                        all_search_messages.append(m)
+                        if m.content:
+                            total_tokens += _estimate_tokens(_extract_content_text(m.content))
                 
-        state["search_results"] = _extract_content_text(search_result['messages'][-1].content)
+                # Yield intermediate logs based on node
+                if node == "model":
+                    yield {
+                        "event": "timeline_log", 
+                        "time": _get_timestamp(), 
+                        "agent": "Search Agent", 
+                        "message": "Search Agent is formulating search query plan..."
+                    }
+                elif node == "tools":
+                    yield {
+                        "event": "timeline_log", 
+                        "time": _get_timestamp(), 
+                        "agent": "Search Agent", 
+                        "message": "Search Agent executed web search tools."
+                    }
+                    
+        state["search_results"] = _extract_content_text(all_search_messages[-1].content)
         
         # Extract sources from search messages
-        sources = _extract_sources(search_result['messages'])
+        sources = _extract_sources(all_search_messages)
         if not sources:
             sources = [{"title": "Search Result", "url": "N/A", "domain": "search_results"}]
             
@@ -235,20 +257,39 @@ def run_research_pipeline_stream(topic: str) -> Generator[dict, None, None]:
     yield {"event": "reader_start"}
     try:
         reader_agent = build_reader_agent()
-        reader_result = reader_agent.invoke({
+        all_reader_messages = []
+        
+        for chunk in reader_agent.stream({
             "messages": [("user",
                 f"Based on the following search results about '{topic}', "
                 f"pick the most relevant URL and scrape it for deeper content.\n\n"
                 f"Search Results:\n{state['search_results']}"
             )]
-        })
-        
-        # Calculate tokens
-        for m in reader_result['messages']:
-            if m.content:
-                total_tokens += _estimate_tokens(_extract_content_text(m.content))
+        }, stream_mode="updates"):
+            for node, val in chunk.items():
+                if "messages" in val:
+                    for m in val["messages"]:
+                        all_reader_messages.append(m)
+                        if m.content:
+                            total_tokens += _estimate_tokens(_extract_content_text(m.content))
                 
-        state['scraped_content'] = _extract_content_text(reader_result['messages'][-1].content)
+                # Yield intermediate logs based on node
+                if node == "model":
+                    yield {
+                        "event": "timeline_log", 
+                        "time": _get_timestamp(), 
+                        "agent": "Reader Agent", 
+                        "message": "Reader Agent is analyzing source texts and picking URL..."
+                    }
+                elif node == "tools":
+                    yield {
+                        "event": "timeline_log", 
+                        "time": _get_timestamp(), 
+                        "agent": "Reader Agent", 
+                        "message": "Reader Agent scraped URL content."
+                    }
+                    
+        state['scraped_content'] = _extract_content_text(all_reader_messages[-1].content)
         char_count = len(state['scraped_content'])
         
         yield {

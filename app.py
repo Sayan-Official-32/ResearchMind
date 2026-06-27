@@ -1,9 +1,11 @@
+import os
+os.environ["HTTPX_NO_HTTP2"] = "1"
+
 from fastapi import FastAPI  # type: ignore[missing-import]
 from fastapi.responses import FileResponse, StreamingResponse   # type: ignore[missing-import]
 from fastapi.staticfiles import StaticFiles  # type: ignore[missing-import]
 from pydantic import BaseModel  # type: ignore[missing-import]
 import json
-import os
 from dotenv import load_dotenv  # type: ignore[missing-import]
 
 # Load environment variables

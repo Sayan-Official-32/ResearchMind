@@ -1,3 +1,6 @@
+import os
+os.environ["HTTPX_NO_HTTP2"] = "1"
+
 from langchain.agents import create_agent  # type: ignore[missing-import]
 from langchain_mistralai import ChatMistralAI  # type: ignore[missing-import]
 from langchain_core.prompts import ChatPromptTemplate  # type: ignore[missing-import]
@@ -9,7 +12,7 @@ from dotenv import load_dotenv  # type: ignore[missing-import]
 load_dotenv()
 
 #model setup 
-llm = ChatMistralAI(model="mistral-large-latest", temperature=0, max_retries=6)
+llm = ChatMistralAI(model="mistral-large-latest", temperature=0, max_retries=10, timeout=120)
 
 
 
