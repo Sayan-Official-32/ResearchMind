@@ -9,14 +9,6 @@ ResearchMind is an elegant, cooperative multi-agent research pipeline that autom
 
 ---
 
-## 🎨 Graphical Abstract
-
-Below is the visual concept and execution flow of the ResearchMind Multi-Agent system:
-
-![ResearchMind Graphical Abstract](static/graphical_abstract.png)
-
----
-
 ## 🏗️ System Architecture & Data Flow
 
 The system uses a sequential multi-agent workflow where the output of one step feeds into the next. 
